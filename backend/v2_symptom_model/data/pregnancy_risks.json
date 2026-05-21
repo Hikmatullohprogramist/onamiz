@@ -1,15 +1,22 @@
 {
   "meta": {
-    "version": "1.0",
+    "version": "2.0",
     "sources": [
       "WHO Recommendations on Antenatal Care 2016 (WHO-RHR-18.02)",
       "ACOG Practice Bulletins 2023",
       "FIGO Pre-eclampsia Guidelines 2022 (PMC9290930)",
       "Preeclampsia Foundation Clinical Guidelines",
       "Edinburgh Postnatal Depression Scale (EPDS)",
-      "Samitivej Hospital First Trimester Protocol"
+      "SMFM Consult Series #53 — Intrahepatic Cholestasis of Pregnancy",
+      "WHO/IADPSG 2013 — Gestational Diabetes Criteria",
+      "ATA Guidelines 2017 — Thyroid Disease in Pregnancy",
+      "Mayo Clinic — Placenta Previa Protocol",
+      "StatPearls — Oligohydramnios/Polyhydramnios",
+      "Andijan Maternal Mortality Study 2025"
     ],
     "created": "2026-05-21",
+    "updated": "2026-05-21",
+    "total_risks": 51,
     "language": "uz/en",
     "disclaimer": "Bu ma'lumotlar faqat yo'naltirish maqsadida. Tibbiy tashxis qo'yilmaydi."
   },
@@ -128,6 +135,36 @@
         },
         "risk_name": "Takroriy abort xavfi",
         "source": "ACOG, WHO"
+      },
+      {
+        "id": "T1_Q8",
+        "week_range": [4, 12],
+        "question_uz": "Yurak urishi tezlashdi, vazn yo'qotdingizmi yoki juda charchamoqdamisiz?",
+        "question_en": "Do you have rapid heartbeat, weight loss, or extreme fatigue?",
+        "type": "choice",
+        "answers": {
+          "yo'q":              { "score": 0, "risk": "green" },
+          "charchoq bor":      { "score": 1, "risk": "yellow" },
+          "yurak tezlashdi":   { "score": 2, "risk": "yellow" },
+          "ikkalasi ham bor":  { "score": 3, "risk": "yellow" }
+        },
+        "risk_name": "Tireoid kasalligi (gipotireoz / gipotireoz)",
+        "clinical_note": "TSH T1 da: <0.1 = gipotireoz, >2.5 = gipotireoz. ATA 2017 bo'yicha.",
+        "source": "ATA Guidelines 2017, Endocrine Society"
+      },
+      {
+        "id": "T1_Q9",
+        "week_range": [4, 12],
+        "question_uz": "Qoningingiz guruhi va Rh omili tekshirilganmi?",
+        "question_en": "Has your blood type and Rh factor been checked?",
+        "type": "yesno",
+        "answers": {
+          "ha, tekshirilgan":      { "score": 0, "risk": "green" },
+          "yo'q, tekshirilmagan": { "score": 2, "risk": "yellow" }
+        },
+        "risk_name": "Rh mos kelmaslik (Rh izoimmunizatsiya)",
+        "clinical_note": "Rh manfiy onada Rh musbat homila bo'lsa — anti-D immunoglobulin kerak (28 haftada)",
+        "source": "ACOG Practice Bulletin 181"
       }
     ],
 
@@ -227,6 +264,51 @@
         },
         "risk_name": "Homila suvi pufagi erta yorilishi (PPROM)",
         "source": "ACOG"
+      },
+      {
+        "id": "T2_Q8",
+        "week_range": [20, 26],
+        "question_uz": "Og'riqsiz (uyqudan uyg'ontiradigan) qin qon ketishi bo'ldimi?",
+        "question_en": "Have you had painless vaginal bleeding (bright red, no pain)?",
+        "type": "choice",
+        "answers": {
+          "yo'q":         { "score": 0, "risk": "green" },
+          "ozgina dog'":  { "score": 3, "risk": "yellow" },
+          "qizil qon":    { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Plasenta qoplag'i (Placenta Previa)",
+        "clinical_note": "Og'riqsiz yorqin qizil qon = plasenta previa belgisi. Ultratovushsiz tekshirib bo'lmaydi. Qin tekshiruvi MUMKIN EMAS.",
+        "source": "Mayo Clinic, ACOG, StatPearls NBK539818"
+      },
+      {
+        "id": "T2_Q9",
+        "week_range": [24, 26],
+        "question_uz": "Qorin aynishi och qorinda qanday? (och qorinda qon shakarini o'lchab ko'rdingizmi?)",
+        "question_en": "Do you feel dizzy/nauseous when fasting? (fasting blood sugar level?)",
+        "type": "choice",
+        "answers": {
+          "bilmayman": { "score": 1, "risk": "yellow" },
+          "normal (< 5.1 mmol/L)":  { "score": 0, "risk": "green" },
+          "ozgina yuqori (5.1-6.9)": { "score": 3, "risk": "yellow" },
+          "yuqori (7.0+)":           { "score": 5, "risk": "red" }
+        },
+        "risk_name": "Gestatsion diabet (GDM)",
+        "clinical_note": "WHO/IADPSG 2013: och qorinda ≥5.1 mmol/L = GDM. 1 soatdan keyin ≥10.0, 2 soatdan keyin ≥8.5 mmol/L.",
+        "source": "WHO/IADPSG 2013, PMC4445944"
+      },
+      {
+        "id": "T2_Q10",
+        "week_range": [16, 26],
+        "question_uz": "Bachadon bo'yningiz zaif yoki qisqa ekanligi aytilganmi (ultratovushda)?",
+        "question_en": "Have you been told your cervix is short or weak (on ultrasound)?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 4, "risk": "red" }
+        },
+        "risk_name": "Bachadon bo'yni yetishmovchiligi (servikal inkompetentlik)",
+        "clinical_note": "Servikal uzunlik <25mm = xavf. Og'riqsiz kengayish yoki tushish hissi bilan birgalikda.",
+        "source": "ACOG Practice Bulletin 142"
       }
     ],
 
@@ -311,6 +393,82 @@
         },
         "risk_name": "Intrauterin o'sish sekinlashishi (IUGR)",
         "source": "WHO ANC 2016, ACOG"
+      },
+      {
+        "id": "T3_Q7",
+        "week_range": [28, 40],
+        "question_uz": "Qo'l kafti va oyoq tagingiz kechasi juda qichishadimi?",
+        "question_en": "Do you have severe itching on palms and soles, especially at night?",
+        "type": "choice",
+        "answers": {
+          "yo'q":              { "score": 0, "risk": "green" },
+          "ozgina qichishadi": { "score": 2, "risk": "yellow" },
+          "kuchli qichishadi": { "score": 4, "risk": "red" },
+          "uxlay olmayapman":  { "score": 5, "risk": "red" }
+        },
+        "risk_name": "Jigar xolestazi (ICP — Intrahepatic Cholestasis of Pregnancy)",
+        "clinical_note": "Safroo kislotasi >40 µmol/L = og'ir ICP. >100 µmol/L = o'lik tug'ilish xavfi keskin oshadi. SMFM: 36 haftada tug'ruq.",
+        "source": "SMFM Consult Series #53, AJOG 2021, PMC11384812"
+      },
+      {
+        "id": "T3_Q8",
+        "week_range": [28, 40],
+        "question_uz": "Qoringiz juda katta va qattiq shishganday his etasizmi? (nafas qiyin)",
+        "question_en": "Does your belly feel very large/tense and you have difficulty breathing?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 3, "risk": "yellow" }
+        },
+        "risk_name": "Ko'p suv (Polihidramnios)",
+        "clinical_note": "AFI >25 cm yoki eng chuqur cho'ntak >8 cm = polihidramnios. Gestatsion diabet bilan bog'liq.",
+        "source": "ACOG Practice Bulletin 2022, StatPearls"
+      },
+      {
+        "id": "T3_Q9",
+        "week_range": [28, 40],
+        "question_uz": "42 haftadan oshib qoldimi? (muddati o'tib ketdimi?)",
+        "question_en": "Are you past 42 weeks of pregnancy (post-term)?",
+        "type": "yesno",
+        "answers": {
+          "yo'q, hali emas": { "score": 0, "risk": "green" },
+          "41 hafta bo'ldi": { "score": 2, "risk": "yellow" },
+          "42+ hafta bo'ldi": { "score": 4, "risk": "red" }
+        },
+        "risk_name": "Muddati o'tib ketgan homila (Post-term ≥42 hafta)",
+        "clinical_note": "42 haftadan keyin plasenta yetishmovchiligi, still birth xavfi ortadi. WHO: 41+6 haftada tug'ruqni rag'batlantirish.",
+        "source": "WHO ANC 2016, ACOG Practice Bulletin 146"
+      },
+      {
+        "id": "T3_Q10",
+        "week_range": [30, 40],
+        "question_uz": "Och qorinda qon shakaringiz 5.1 mmol/L dan yuqorimi?",
+        "question_en": "Is your fasting blood sugar above 5.1 mmol/L?",
+        "type": "choice",
+        "answers": {
+          "bilmayman":              { "score": 1, "risk": "yellow" },
+          "normal (<5.1 mmol/L)":  { "score": 0, "risk": "green" },
+          "yuqori (5.1-6.9)":      { "score": 3, "risk": "yellow" },
+          "juda yuqori (7.0+)":    { "score": 5, "risk": "red" }
+        },
+        "risk_name": "Nazorat qilinmagan gestatsion diabet (GDM)",
+        "clinical_note": "WHO/IADPSG 2013: Och qorinda ≥5.1 mmol/L = GDM. 3-trimestrda nazorat qilinmasa makrosomiya, tug'ruq asoratlari.",
+        "source": "WHO/IADPSG 2013"
+      },
+      {
+        "id": "T3_Q11",
+        "week_range": [27, 40],
+        "question_uz": "Og'riqsiz qizil qon ketishi sezdingizmi? (qorin og'riqsiz)",
+        "question_en": "Have you noticed painless bright red bleeding (no abdominal pain)?",
+        "type": "choice",
+        "answers": {
+          "yo'q":       { "score": 0, "risk": "green" },
+          "dog' ko'rdim": { "score": 3, "risk": "yellow" },
+          "qon ketdi":  { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Plasenta qoplag'i (Placenta Previa) — 3-trimest",
+        "clinical_note": "Og'riqsiz yorqin qon = plasenta previa. Qin tekshiruvi MUMKIN EMAS. Darhol ultrases.",
+        "source": "Mayo Clinic, ACOG, NBK539818"
       }
     ],
 
@@ -498,25 +656,25 @@
 
   "push_schedule": {
     "T1": [
-      { "week": 6,  "form_ids": ["T1_Q1","T1_Q2","T1_Q3"], "title_uz": "1-trimest: Birinchi tekshiruv" },
-      { "week": 8,  "form_ids": ["T1_Q4","T1_Q5","T1_Q6"], "title_uz": "1-trimest: O'rtacha tekshiruv" },
-      { "week": 10, "form_ids": ["T1_Q1","T1_Q3","T1_Q6"], "title_uz": "1-trimest: Holat nazorati" },
-      { "week": 12, "form_ids": ["T1_Q1","T1_Q2","T1_Q3","T1_Q4","T1_Q5","T1_Q6","T1_Q7"], "title_uz": "1-trimest: To'liq tekshiruv" }
+      { "week": 6,  "form_ids": ["T1_Q1","T1_Q2","T1_Q3","T1_Q9"], "title_uz": "1-trimest: Birinchi tekshiruv" },
+      { "week": 8,  "form_ids": ["T1_Q4","T1_Q5","T1_Q6","T1_Q8"], "title_uz": "1-trimest: O'rtacha tekshiruv" },
+      { "week": 10, "form_ids": ["T1_Q1","T1_Q3","T1_Q6","T1_Q8"], "title_uz": "1-trimest: Holat nazorati" },
+      { "week": 12, "form_ids": ["T1_Q1","T1_Q2","T1_Q3","T1_Q4","T1_Q5","T1_Q6","T1_Q7","T1_Q8","T1_Q9"], "title_uz": "1-trimest: To'liq tekshiruv" }
     ],
     "T2": [
-      { "week": 16, "form_ids": ["T2_Q1","T2_Q2","T2_Q4"], "title_uz": "2-trimest: Birinchi tekshiruv" },
-      { "week": 20, "form_ids": ["T2_Q1","T2_Q2","T2_Q3","T2_Q4"], "title_uz": "2-trimest: O'rta tekshiruv" },
-      { "week": 24, "form_ids": ["T2_Q1","T2_Q2","T2_Q3","T2_Q5","T2_Q6"], "title_uz": "2-trimest: To'liq tekshiruv" },
-      { "week": 26, "form_ids": ["T2_Q4","T2_Q7"], "title_uz": "2-trimest yakuniy" }
+      { "week": 16, "form_ids": ["T2_Q1","T2_Q2","T2_Q4","T2_Q10"], "title_uz": "2-trimest: Birinchi tekshiruv" },
+      { "week": 20, "form_ids": ["T2_Q1","T2_Q2","T2_Q3","T2_Q4","T2_Q8"], "title_uz": "2-trimest: O'rta tekshiruv (ultratovush hafta)" },
+      { "week": 24, "form_ids": ["T2_Q1","T2_Q2","T2_Q3","T2_Q5","T2_Q6","T2_Q9"], "title_uz": "2-trimest: Diabet skriningi" },
+      { "week": 26, "form_ids": ["T2_Q4","T2_Q7","T2_Q8","T2_Q10"], "title_uz": "2-trimest yakuniy" }
     ],
     "T3": [
-      { "week": 28, "form_ids": ["T3_Q1","T3_Q2"], "title_uz": "3-trimest: Birinchi tekshiruv" },
-      { "week": 30, "form_ids": ["T3_Q1","T3_Q2","T3_Q5"], "title_uz": "3-trimest: O'rta tekshiruv" },
-      { "week": 32, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q6"], "title_uz": "3-trimest: Nazorat" },
-      { "week": 34, "form_ids": ["T3_Q1","T3_Q2","T3_Q4","T3_Q5"], "title_uz": "3-trimest: Muhim tekshiruv" },
-      { "week": 36, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q4","T3_Q5","T3_Q6"], "title_uz": "3-trimest: To'liq tekshiruv" },
-      { "week": 38, "form_ids": ["T3_Q1","T3_Q2","T3_Q3"], "title_uz": "Tug'ruqqa tayyorgarlik" },
-      { "week": 40, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q4"], "title_uz": "Tugash muddati tekshiruvi" }
+      { "week": 28, "form_ids": ["T3_Q1","T3_Q2","T3_Q7","T3_Q10"], "title_uz": "3-trimest: Birinchi tekshiruv" },
+      { "week": 30, "form_ids": ["T3_Q1","T3_Q2","T3_Q5","T3_Q7","T3_Q8"], "title_uz": "3-trimest: O'rta tekshiruv" },
+      { "week": 32, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q6","T3_Q7","T3_Q10"], "title_uz": "3-trimest: Nazorat" },
+      { "week": 34, "form_ids": ["T3_Q1","T3_Q2","T3_Q4","T3_Q5","T3_Q7","T3_Q11"], "title_uz": "3-trimest: Muhim tekshiruv" },
+      { "week": 36, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q4","T3_Q5","T3_Q6","T3_Q7","T3_Q9","T3_Q10","T3_Q11"], "title_uz": "3-trimest: To'liq tekshiruv" },
+      { "week": 38, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q7","T3_Q11"], "title_uz": "Tug'ruqqa tayyorgarlik" },
+      { "week": 40, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q4","T3_Q9","T3_Q11"], "title_uz": "Tugash muddati — 42 hafta xavfi" }
     ],
     "PP": [
       { "week_after_birth": 1,  "form_ids": ["PP_EPDS_1","PP_EPDS_2","PP_EPDS_3","PP_EPDS_4","PP_EPDS_5"], "title_uz": "Tug'ruqdan keyin: Dastlabki holat" },
