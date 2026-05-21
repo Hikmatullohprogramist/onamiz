@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m venv .venv)",
+      "Bash(python3 -m venv /Users/dilshod/apps/v1_model/.venv)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(pip3 list *)",
+      "Bash(brew list *)",
+      "Read(//usr/local/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/dilshod/miniforge3/bin/**)",
+      "Read(//Users/dilshod/anaconda3/bin/**)"
+    ]
+  }
+}
