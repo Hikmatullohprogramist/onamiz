@@ -1,0 +1,528 @@
+{
+  "meta": {
+    "version": "1.0",
+    "sources": [
+      "WHO Recommendations on Antenatal Care 2016 (WHO-RHR-18.02)",
+      "ACOG Practice Bulletins 2023",
+      "FIGO Pre-eclampsia Guidelines 2022 (PMC9290930)",
+      "Preeclampsia Foundation Clinical Guidelines",
+      "Edinburgh Postnatal Depression Scale (EPDS)",
+      "Samitivej Hospital First Trimester Protocol"
+    ],
+    "created": "2026-05-21",
+    "language": "uz/en",
+    "disclaimer": "Bu ma'lumotlar faqat yo'naltirish maqsadida. Tibbiy tashxis qo'yilmaydi."
+  },
+
+  "risk_levels": {
+    "green":  { "code": "yashil",   "label_uz": "Xavfsiz",         "action_uz": "Rejali ko'rikka boring" },
+    "yellow": { "code": "sariq",    "label_uz": "Diqqat talab",    "action_uz": "Bu hafta shifokorni ko'ring" },
+    "red":    { "code": "qizil",    "label_uz": "Yuqori xavf",     "action_uz": "Bugun shifokorga boring" },
+    "emergency": { "code": "favqulodda", "label_uz": "Favqulodda", "action_uz": "TEZKOR: hoziroq tez yordam chaqiring" }
+  },
+
+  "trimesters": {
+    "T1": { "weeks": "1-12",  "label_uz": "1-trimest" },
+    "T2": { "weeks": "13-26", "label_uz": "2-trimest" },
+    "T3": { "weeks": "27-40", "label_uz": "3-trimest" },
+    "PP": { "weeks": "0-52 hafta tug'ruqdan keyin", "label_uz": "Tug'ruqdan keyingi davr" }
+  },
+
+  "symptom_questions": {
+
+    "T1": [
+      {
+        "id": "T1_Q1",
+        "week_range": [4, 12],
+        "question_uz": "Qindan qon ketish yoki dog'lar boryaptimi?",
+        "question_en": "Do you have vaginal bleeding or spotting?",
+        "type": "yesno",
+        "answers": {
+          "yo'q":    { "score": 0, "risk": "green" },
+          "ozgina":  { "score": 2, "risk": "yellow" },
+          "ko'p":    { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Spontan abort / Ektopik homila",
+        "source": "WHO ANC 2016, ACOG"
+      },
+      {
+        "id": "T1_Q2",
+        "week_range": [4, 12],
+        "question_uz": "Bir tomondama keskin qorin og'rig'i bormi?",
+        "question_en": "Do you have sharp one-sided abdominal pain?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Ektopik (bachadon tashqarisidagi) homila",
+        "source": "ACOG Practice Bulletin 193"
+      },
+      {
+        "id": "T1_Q3",
+        "week_range": [4, 12],
+        "question_uz": "Ko'ngil aynish va qusish qanchalik kuchli?",
+        "question_en": "How severe is your nausea and vomiting?",
+        "type": "scale",
+        "answers": {
+          "yo'q":              { "score": 0, "risk": "green" },
+          "kamdan-kam":        { "score": 0, "risk": "green" },
+          "tez-tez":           { "score": 1, "risk": "green" },
+          "ovqat yeyolmayapman": { "score": 3, "risk": "yellow" },
+          "hech narsa ushlanmaydi": { "score": 5, "risk": "red" }
+        },
+        "risk_name": "Hyperemesis gravidarum",
+        "source": "WHO ANC 2016"
+      },
+      {
+        "id": "T1_Q4",
+        "week_range": [4, 12],
+        "question_uz": "Siydik chiqarishda achishish yoki og'riq boryaptimi?",
+        "question_en": "Do you have burning or pain when urinating?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 3, "risk": "yellow" }
+        },
+        "risk_name": "Siydik yo'li infeksiyasi (UTI) / Pielonefrit",
+        "source": "WHO ANC 2016"
+      },
+      {
+        "id": "T1_Q5",
+        "week_range": [4, 12],
+        "question_uz": "Tana haroratingiz qancha? (°C)",
+        "question_en": "What is your body temperature? (°C)",
+        "type": "numeric",
+        "thresholds": [
+          { "condition": "< 37.5", "score": 0, "risk": "green" },
+          { "condition": "37.5 - 37.9", "score": 2, "risk": "yellow" },
+          { "condition": ">= 38.0", "score": 4, "risk": "red" }
+        ],
+        "risk_name": "Infeksiya / Sepsis",
+        "source": "WHO ANC 2016"
+      },
+      {
+        "id": "T1_Q6",
+        "week_range": [4, 12],
+        "question_uz": "Bosh aylanish yoki hushingizdan ketaydigan his boryaptimi?",
+        "question_en": "Are you feeling dizzy or faint?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ba'zan": { "score": 1, "risk": "yellow" },
+          "tez-tez": { "score": 3, "risk": "yellow" }
+        },
+        "risk_name": "Anemiya / Qon bosimi o'zgarishi",
+        "source": "WHO ANC 2016"
+      },
+      {
+        "id": "T1_Q7",
+        "week_range": [6, 12],
+        "question_uz": "Avval homilangiz tushganmi (abort yoki o'z-o'zidan)?",
+        "question_en": "Have you had previous miscarriages?",
+        "type": "choice",
+        "answers": {
+          "yo'q":     { "score": 0, "risk": "green" },
+          "1 marta":  { "score": 1, "risk": "yellow" },
+          "2+ marta": { "score": 3, "risk": "yellow" }
+        },
+        "risk_name": "Takroriy abort xavfi",
+        "source": "ACOG, WHO"
+      }
+    ],
+
+    "T2": [
+      {
+        "id": "T2_Q1",
+        "week_range": [13, 26],
+        "question_uz": "Bosh og'rig'ingiz boryaptimi? (tabletkadan o'tmasa)",
+        "question_en": "Do you have headaches that don't respond to pain medication?",
+        "type": "yesno",
+        "answers": {
+          "yo'q":    { "score": 0, "risk": "green" },
+          "ozgina":  { "score": 1, "risk": "yellow" },
+          "kuchli":  { "score": 4, "risk": "red" }
+        },
+        "risk_name": "Preeklampsia",
+        "source": "Preeclampsia Foundation, FIGO 2022"
+      },
+      {
+        "id": "T2_Q2",
+        "week_range": [13, 26],
+        "question_uz": "Ko'zingiz oldida chaqmoq, dog' yoki xiralashish boryaptimi?",
+        "question_en": "Do you have visual disturbances (flashing lights, blurring, spots)?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Og'ir preeklampsia / Eklampsiya xavfi",
+        "source": "FIGO 2022, Preeclampsia Foundation"
+      },
+      {
+        "id": "T2_Q3",
+        "week_range": [13, 26],
+        "question_uz": "Qo'l, oyoq yoki yuzingiz shishib qolganmi?",
+        "question_en": "Do you have swelling in your hands, feet, or face?",
+        "type": "choice",
+        "answers": {
+          "yo'q":          { "score": 0, "risk": "green" },
+          "oyoqda ozgina": { "score": 1, "risk": "green" },
+          "qo'l va yuzda": { "score": 3, "risk": "yellow" },
+          "keskin shish":  { "score": 5, "risk": "red" }
+        },
+        "risk_name": "Preeklampsia / Nefropatiya",
+        "source": "FIGO 2022"
+      },
+      {
+        "id": "T2_Q4",
+        "week_range": [20, 26],
+        "question_uz": "Homila harakatini his qilyapsizmi? (20+ haftada)",
+        "question_en": "Can you feel fetal movements? (at 20+ weeks)",
+        "type": "choice",
+        "answers": {
+          "ha, yaxshi":       { "score": 0, "risk": "green" },
+          "kamroq bo'ldi":    { "score": 3, "risk": "yellow" },
+          "umuman yo'q":      { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Fetal distress / Intrauterin o'lim xavfi",
+        "source": "WHO ANC 2016, ACOG"
+      },
+      {
+        "id": "T2_Q5",
+        "week_range": [13, 26],
+        "question_uz": "Qorin yoki o'ng yon tomonida og'riq boryaptimi?",
+        "question_en": "Do you have abdominal pain or pain under right ribs?",
+        "type": "yesno",
+        "answers": {
+          "yo'q":   { "score": 0, "risk": "green" },
+          "ozgina": { "score": 2, "risk": "yellow" },
+          "kuchli": { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Preeklampsia / Jigar muammosi (HELLP sindrom)",
+        "source": "FIGO 2022"
+      },
+      {
+        "id": "T2_Q6",
+        "week_range": [13, 26],
+        "question_uz": "Haftalik vazningiz keskin oshib (3+ kg) qoldimi?",
+        "question_en": "Have you gained more than 3kg in a week suddenly?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 3, "risk": "yellow" }
+        },
+        "risk_name": "Preeklampsia / Suyuqlik ushlanishi",
+        "source": "Preeclampsia Foundation"
+      },
+      {
+        "id": "T2_Q7",
+        "week_range": [13, 26],
+        "question_uz": "Qin suyuqligi yoki suv oqishi sezildimi?",
+        "question_en": "Do you notice vaginal fluid leaking or watery discharge?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Homila suvi pufagi erta yorilishi (PPROM)",
+        "source": "ACOG"
+      }
+    ],
+
+    "T3": [
+      {
+        "id": "T3_Q1",
+        "week_range": [27, 40],
+        "question_uz": "Homila harakati 12 soatda 10 martadan kammi?",
+        "question_en": "Is fetal movement less than 10 times in 12 hours?",
+        "type": "yesno",
+        "answers": {
+          "yo'q, normal":   { "score": 0, "risk": "green" },
+          "kamroq bo'ldi":  { "score": 3, "risk": "yellow" },
+          "deyarli yo'q":   { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Fetal distress / Gipoksiya",
+        "source": "WHO ANC 2016, ACOG"
+      },
+      {
+        "id": "T3_Q2",
+        "week_range": [27, 40],
+        "question_uz": "Kuchli bosh og'riq yoki ko'rish buzilishi boryaptimi?",
+        "question_en": "Do you have severe headache or vision problems?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Eklampsiya / Og'ir preeklampsia",
+        "source": "FIGO 2022, WHO"
+      },
+      {
+        "id": "T3_Q3",
+        "week_range": [27, 40],
+        "question_uz": "Muntazam qisqarishlar (contraction) boryaptimi? (37 haftadan oldin)",
+        "question_en": "Are you having regular contractions before 37 weeks?",
+        "type": "yesno",
+        "answers": {
+          "yo'q":     { "score": 0, "risk": "green" },
+          "ba'zan":   { "score": 2, "risk": "yellow" },
+          "muntazam": { "score": 5, "risk": "red" }
+        },
+        "risk_name": "Muddatidan oldin tug'ruq (preterm labor)",
+        "source": "ACOG Practice Bulletin 171"
+      },
+      {
+        "id": "T3_Q4",
+        "week_range": [27, 40],
+        "question_uz": "Qorin og'rig'i bilan birga qon ketish boryaptimi?",
+        "question_en": "Do you have abdominal pain with bleeding?",
+        "type": "yesno",
+        "answers": {
+          "yo'q": { "score": 0, "risk": "green" },
+          "ha":   { "score": 5, "risk": "emergency" }
+        },
+        "risk_name": "Plasenta ajralishi (abruptio placentae)",
+        "source": "ACOG, WHO"
+      },
+      {
+        "id": "T3_Q5",
+        "week_range": [27, 40],
+        "question_uz": "Nafas olish qiyinlashdi yoki yurak urishi tezlashdimi?",
+        "question_en": "Are you experiencing shortness of breath or rapid heart rate?",
+        "type": "yesno",
+        "answers": {
+          "yo'q":    { "score": 0, "risk": "green" },
+          "ozgina":  { "score": 2, "risk": "yellow" },
+          "kuchli":  { "score": 4, "risk": "red" }
+        },
+        "risk_name": "O'pka shishi / Preeklampsia asoratlari",
+        "source": "FIGO 2022, Preeclampsia Foundation"
+      },
+      {
+        "id": "T3_Q6",
+        "week_range": [27, 40],
+        "question_uz": "Qoringiz o'lchami (aylanasi) o'smayotganday his etasizmi?",
+        "question_en": "Does your belly seem to have stopped growing?",
+        "type": "yesno",
+        "answers": {
+          "yo'q":  { "score": 0, "risk": "green" },
+          "ha":    { "score": 3, "risk": "yellow" }
+        },
+        "risk_name": "Intrauterin o'sish sekinlashishi (IUGR)",
+        "source": "WHO ANC 2016, ACOG"
+      }
+    ],
+
+    "PP": [
+      {
+        "id": "PP_EPDS_1",
+        "week_range": [0, 52],
+        "question_uz": "Kulishga va ishlarning kulgili tomonini ko'rishga muvaffaq bo'ldingizmi?",
+        "question_en": "Have you been able to laugh and see the funny side of things?",
+        "type": "epds_scale",
+        "answers": {
+          "Avvalgiday":              { "score": 0 },
+          "Avvalgiday emas":         { "score": 1 },
+          "Aniq avvalgiday emas":    { "score": 2 },
+          "Umuman muvaffaq bo'lmadim": { "score": 3 }
+        },
+        "epds_item": 1,
+        "source": "EPDS (Cox et al., 1987)"
+      },
+      {
+        "id": "PP_EPDS_2",
+        "week_range": [0, 52],
+        "question_uz": "Kelajakni xursandchilik bilan ko'zdingizmi?",
+        "question_en": "Have you looked forward with enjoyment to things?",
+        "type": "epds_scale",
+        "answers": {
+          "Avvalgiday":                       { "score": 0 },
+          "Avvalgiday emas":                  { "score": 1 },
+          "Juda kamdan-kam":                  { "score": 2 },
+          "Deyarli hech qachon muvaffaq bo'lmadim": { "score": 3 }
+        },
+        "epds_item": 2,
+        "source": "EPDS"
+      },
+      {
+        "id": "PP_EPDS_3",
+        "week_range": [0, 52],
+        "question_uz": "Narsalar noto'g'ri ketayotganda o'zimni keraksiz aybdor his qildimmi?",
+        "question_en": "Have you blamed yourself unnecessarily when things went wrong?",
+        "type": "epds_scale",
+        "answers": {
+          "Ha, ko'pincha":        { "score": 3 },
+          "Ha, ba'zan":           { "score": 2 },
+          "Kamdan-kam":           { "score": 1 },
+          "Yo'q, hech qachon":   { "score": 0 }
+        },
+        "epds_item": 3,
+        "source": "EPDS"
+      },
+      {
+        "id": "PP_EPDS_4",
+        "week_range": [0, 52],
+        "question_uz": "Biror sababsiz tashvishlandim yoki vahimaga tushdim",
+        "question_en": "Have you been anxious or worried for no good reason?",
+        "type": "epds_scale",
+        "answers": {
+          "Yo'q, umuman":      { "score": 0 },
+          "Kamdan-kam":        { "score": 1 },
+          "Ha, ba'zan":        { "score": 2 },
+          "Ha, juda tez-tez":  { "score": 3 }
+        },
+        "epds_item": 4,
+        "source": "EPDS"
+      },
+      {
+        "id": "PP_EPDS_5",
+        "week_range": [0, 52],
+        "question_uz": "Biror sababsiz qo'rqib ketdim yoki vahimaga tushdim",
+        "question_en": "Have you felt scared or panicky for no very good reason?",
+        "type": "epds_scale",
+        "answers": {
+          "Ha, ko'p":       { "score": 3 },
+          "Ha, ba'zan":     { "score": 2 },
+          "Juda kam":       { "score": 1 },
+          "Yo'q, umuman":   { "score": 0 }
+        },
+        "epds_item": 5,
+        "source": "EPDS"
+      },
+      {
+        "id": "PP_EPDS_6",
+        "week_range": [0, 52],
+        "question_uz": "Ishlar ustimga yig'ilib qoldi, men uddalay olmadim",
+        "question_en": "Things have been getting on top of me",
+        "type": "epds_scale",
+        "answers": {
+          "Ha, ko'pincha uddalay olmadim": { "score": 3 },
+          "Ha, ba'zan odatgiday uddalay olmadim": { "score": 2 },
+          "Yo'q, ko'pincha uddalay oldim": { "score": 1 },
+          "Yo'q, odatgiday uddalay oldim": { "score": 0 }
+        },
+        "epds_item": 6,
+        "source": "EPDS"
+      },
+      {
+        "id": "PP_EPDS_7",
+        "week_range": [0, 52],
+        "question_uz": "Shu qadar baxtsiz edimki, uxlay olmadim",
+        "question_en": "I have been so unhappy that I have had difficulty sleeping",
+        "type": "epds_scale",
+        "answers": {
+          "Ha, ko'pincha":         { "score": 3 },
+          "Ha, ba'zan":            { "score": 2 },
+          "Kamdan-kam":            { "score": 1 },
+          "Yo'q, umuman emas":     { "score": 0 }
+        },
+        "epds_item": 7,
+        "source": "EPDS"
+      },
+      {
+        "id": "PP_EPDS_8",
+        "week_range": [0, 52],
+        "question_uz": "Xafa yoki baxtsiz his qildim",
+        "question_en": "I have felt sad or miserable",
+        "type": "epds_scale",
+        "answers": {
+          "Ha, ko'pincha":     { "score": 3 },
+          "Ha, ancha ko'p":    { "score": 2 },
+          "Kamdan-kam":        { "score": 1 },
+          "Yo'q, umuman emas": { "score": 0 }
+        },
+        "epds_item": 8,
+        "source": "EPDS"
+      },
+      {
+        "id": "PP_EPDS_9",
+        "week_range": [0, 52],
+        "question_uz": "Shu qadar baxtsiz edimki, yig'ladim",
+        "question_en": "I have been so unhappy that I have been crying",
+        "type": "epds_scale",
+        "answers": {
+          "Ha, ko'pincha":       { "score": 3 },
+          "Ha, ancha ko'p":      { "score": 2 },
+          "Ba'zan":              { "score": 1 },
+          "Yo'q, umuman emas":   { "score": 0 }
+        },
+        "epds_item": 9,
+        "source": "EPDS"
+      },
+      {
+        "id": "PP_EPDS_10",
+        "week_range": [0, 52],
+        "question_uz": "O'zimga zarar yetkazish fikri xayolimga keldi",
+        "question_en": "The thought of harming myself has occurred to me",
+        "type": "epds_scale",
+        "answers": {
+          "Ha, ancha tez-tez":   { "score": 3 },
+          "Ba'zan":              { "score": 2 },
+          "Kamdan-kam":          { "score": 1 },
+          "Hech qachon":         { "score": 0 }
+        },
+        "epds_item": 10,
+        "critical": true,
+        "note": "Istalgan ball > 0 bo'lsa darhol shifokorga yo'naltirish",
+        "source": "EPDS"
+      }
+    ]
+  },
+
+  "scoring_rules": {
+    "T1": {
+      "green":     { "range": [0, 2],  "message_uz": "Ko'rsatkichlar normal. Rejali ko'rikka boring." },
+      "yellow":    { "range": [3, 5],  "message_uz": "Ba'zi belgilar bor. Bu hafta shifokorni ko'ring." },
+      "red":       { "range": [6, 9],  "message_uz": "Diqqatni talab qiluvchi belgilar. Bugun shifokorga boring." },
+      "emergency": { "range": [10, 99], "message_uz": "TEZKOR: Hoziroq shifokorga boring yoki tez yordam chaqiring." }
+    },
+    "T2": {
+      "green":     { "range": [0, 2],  "message_uz": "Ko'rsatkichlar normal. Rejali ko'rikka boring." },
+      "yellow":    { "range": [3, 5],  "message_uz": "Ba'zi belgilar bor. Bu hafta shifokorni ko'ring." },
+      "red":       { "range": [6, 9],  "message_uz": "Diqqatni talab qiluvchi belgilar. Bugun shifokorga boring." },
+      "emergency": { "range": [10, 99], "message_uz": "TEZKOR: Hoziroq shifokorga boring yoki tez yordam chaqiring." }
+    },
+    "T3": {
+      "green":     { "range": [0, 2],  "message_uz": "Ko'rsatkichlar normal. Rejali ko'rikka boring." },
+      "yellow":    { "range": [3, 5],  "message_uz": "Ba'zi belgilar bor. Bu hafta shifokorni ko'ring." },
+      "red":       { "range": [6, 9],  "message_uz": "Diqqatni talab qiluvchi belgilar. Bugun shifokorga boring." },
+      "emergency": { "range": [10, 99], "message_uz": "TEZKOR: Hoziroq shifokorga boring yoki tez yordam chaqiring." }
+    },
+    "PP_EPDS": {
+      "green":     { "range": [0, 9],  "message_uz": "Depressiya belgilari kam. Kuzatuvni davom ettiring." },
+      "yellow":    { "range": [10, 12], "message_uz": "Ba'zi belgilar bor. Shifokor yoki psixolog bilan gaplashing." },
+      "red":       { "range": [13, 30], "message_uz": "Postpartum depressiya ehtimoli bor. Bugun mutaxassisga murojaat qiling." }
+    }
+  },
+
+  "push_schedule": {
+    "T1": [
+      { "week": 6,  "form_ids": ["T1_Q1","T1_Q2","T1_Q3"], "title_uz": "1-trimest: Birinchi tekshiruv" },
+      { "week": 8,  "form_ids": ["T1_Q4","T1_Q5","T1_Q6"], "title_uz": "1-trimest: O'rtacha tekshiruv" },
+      { "week": 10, "form_ids": ["T1_Q1","T1_Q3","T1_Q6"], "title_uz": "1-trimest: Holat nazorati" },
+      { "week": 12, "form_ids": ["T1_Q1","T1_Q2","T1_Q3","T1_Q4","T1_Q5","T1_Q6","T1_Q7"], "title_uz": "1-trimest: To'liq tekshiruv" }
+    ],
+    "T2": [
+      { "week": 16, "form_ids": ["T2_Q1","T2_Q2","T2_Q4"], "title_uz": "2-trimest: Birinchi tekshiruv" },
+      { "week": 20, "form_ids": ["T2_Q1","T2_Q2","T2_Q3","T2_Q4"], "title_uz": "2-trimest: O'rta tekshiruv" },
+      { "week": 24, "form_ids": ["T2_Q1","T2_Q2","T2_Q3","T2_Q5","T2_Q6"], "title_uz": "2-trimest: To'liq tekshiruv" },
+      { "week": 26, "form_ids": ["T2_Q4","T2_Q7"], "title_uz": "2-trimest yakuniy" }
+    ],
+    "T3": [
+      { "week": 28, "form_ids": ["T3_Q1","T3_Q2"], "title_uz": "3-trimest: Birinchi tekshiruv" },
+      { "week": 30, "form_ids": ["T3_Q1","T3_Q2","T3_Q5"], "title_uz": "3-trimest: O'rta tekshiruv" },
+      { "week": 32, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q6"], "title_uz": "3-trimest: Nazorat" },
+      { "week": 34, "form_ids": ["T3_Q1","T3_Q2","T3_Q4","T3_Q5"], "title_uz": "3-trimest: Muhim tekshiruv" },
+      { "week": 36, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q4","T3_Q5","T3_Q6"], "title_uz": "3-trimest: To'liq tekshiruv" },
+      { "week": 38, "form_ids": ["T3_Q1","T3_Q2","T3_Q3"], "title_uz": "Tug'ruqqa tayyorgarlik" },
+      { "week": 40, "form_ids": ["T3_Q1","T3_Q2","T3_Q3","T3_Q4"], "title_uz": "Tugash muddati tekshiruvi" }
+    ],
+    "PP": [
+      { "week_after_birth": 1,  "form_ids": ["PP_EPDS_1","PP_EPDS_2","PP_EPDS_3","PP_EPDS_4","PP_EPDS_5"], "title_uz": "Tug'ruqdan keyin: Dastlabki holat" },
+      { "week_after_birth": 4,  "form_ids": ["PP_EPDS_1","PP_EPDS_2","PP_EPDS_3","PP_EPDS_4","PP_EPDS_5","PP_EPDS_6","PP_EPDS_7","PP_EPDS_8","PP_EPDS_9","PP_EPDS_10"], "title_uz": "To'liq EPDS skriningi (1 oy)" },
+      { "week_after_birth": 8,  "form_ids": ["PP_EPDS_1","PP_EPDS_6","PP_EPDS_7","PP_EPDS_8","PP_EPDS_9","PP_EPDS_10"], "title_uz": "EPDS nazorati (2 oy)" },
+      { "week_after_birth": 12, "form_ids": ["PP_EPDS_1","PP_EPDS_2","PP_EPDS_7","PP_EPDS_8","PP_EPDS_9","PP_EPDS_10"], "title_uz": "EPDS nazorati (3 oy)" }
+    ]
+  }
+}
