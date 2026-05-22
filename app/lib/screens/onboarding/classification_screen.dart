@@ -126,7 +126,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _selected != null
                       ? AppColors.primary
-                      : AppColors.textLight,
+                      : AppColors.textGrey,
                 ),
                 child: const Text('Davom etish'),
               ),
@@ -218,7 +218,7 @@ class _OptionCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: enabled
                               ? AppColors.textDark
-                              : AppColors.textLight,
+                              : AppColors.textGrey,
                         ),
                       ),
                       if (!enabled) ...[
@@ -248,7 +248,7 @@ class _OptionCard extends StatelessWidget {
                       fontSize: 13,
                       color: enabled
                           ? AppColors.textGrey
-                          : AppColors.textLight,
+                          : AppColors.textGrey,
                     ),
                   ),
                 ],

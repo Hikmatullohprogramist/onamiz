@@ -171,12 +171,14 @@ class _PregnancySetupScreenState extends State<PregnancySetupScreen> {
             // Joylashuv
             _InputLabel('Joylashuvingiz'),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                side: BorderSide(color: Colors.grey.shade300),
               ),
+              clipBehavior: Clip.hardEdge,
               child: Column(
                 children: [
                   _LocationTile(
