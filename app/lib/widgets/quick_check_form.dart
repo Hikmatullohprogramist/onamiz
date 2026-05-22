@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../core/theme.dart';
 
 class QuickCheckForm extends StatefulWidget {
@@ -30,133 +31,141 @@ class _QuickCheckFormState extends State<QuickCheckForm> {
   List<_Question> get _questions => [
     _Question(
       key: 'vaginal_bleeding',
-      icon: '🩸',
-      text: 'Qin qon ketishi yoki dog\' boryaptimi?',
-      options: ['Yo\'q', 'Ozgina', 'Ko\'p'],
+      emoji: '🩸',
+      text: "Qin qon ketishi yoki dog' boryaptimi?",
+      options: ["Yo'q", 'Ozgina', "Ko'p"],
     ),
     _Question(
       key: 'headache_severity',
-      icon: '🤕',
-      text: 'Bosh og\'rig\'i boryaptimi?',
-      options: ['Yo\'q', 'Ozgina', 'Kuchli (tabletkadan o\'tmaydi)'],
+      emoji: '🤕',
+      text: "Bosh og'rig'i boryaptimi?",
+      options: ["Yo'q", 'Ozgina', "Kuchli (tabletkadan o'tmaydi)"],
     ),
     _Question(
       key: 'visual_disturbance',
-      icon: '👁️',
-      text: 'Ko\'z oldida uchish yoki xiralashish?',
-      options: ['Yo\'q', 'Ha'],
+      emoji: '👁️',
+      text: "Ko'z oldida uchish yoki xiralashish?",
+      options: ["Yo'q", 'Ha'],
     ),
     if (widget.trimester != 'T1') _Question(
       key: 'fetal_movement',
-      icon: '👶',
+      emoji: '👶',
       text: 'Homila harakati qanday?',
-      options: ['Yaxshi', 'Kamroq bo\'ldi', 'Deyarli yo\'q'],
+      options: ['Yaxshi', "Kamroq bo'ldi", "Deyarli yo'q"],
     ),
     if (widget.trimester == 'T3') _Question(
       key: 'itching_palms_soles',
-      icon: '🖐️',
+      emoji: '🖐️',
       text: 'Kaft / oyoq tagingiz qichishadimi?',
-      options: ['Yo\'q', 'Ozgina', 'Kuchli', 'Uxlay olmayapman'],
+      options: ["Yo'q", 'Ozgina', 'Kuchli', "Uxlay olmayapman"],
     ),
     _Question(
       key: 'anemia_level',
-      icon: '😴',
+      emoji: '😴',
       text: 'Zaiflik / bosh aylanishi boryaptimi?',
-      options: ['Yo\'q', 'Ozgina', 'Ko\'p', 'Juda kuchli'],
+      options: ["Yo'q", 'Ozgina', "Ko'p", 'Juda kuchli'],
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          ..._questions.map((q) => _QuestionTile(
-            question: q,
-            value: _answers[q.key] ?? 0,
-            onChanged: (v) => setState(() => _answers[q.key] = v),
-          )),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: widget.loading
-                  ? null
-                  : () => widget.onSubmit(Map.from(_answers)),
-              icon: widget.loading
+      decoration: AppDecoration.card,
+      child: Column(children: [
+        ..._questions.asMap().entries.map((entry) => _QuestionTile(
+          question: entry.value,
+          value: _answers[entry.value.key] ?? 0,
+          isLast: entry.key == _questions.length - 1,
+          onChanged: (v) => setState(() => _answers[entry.value.key] = v),
+        )),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          child: GestureDetector(
+            onTap: widget.loading
+                ? null
+                : () => widget.onSubmit(Map.from(_answers)),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: widget.loading ? null : AppColors.headerGradient,
+                color: widget.loading ? AppColors.divider : null,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: widget.loading ? [] : [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 12, offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: widget.loading
                   ? const SizedBox(
-                      width: 20, height: 20,
+                      width: 22, height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.analytics_outlined),
-              label: Text(widget.loading ? 'Tahlil qilinmoqda...' : 'Tahlil qilish'),
+                          strokeWidth: 2.5, color: Colors.white))
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.analytics_outlined,
+                            color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Tahlil qilish', style: GoogleFonts.nunito(
+                          color: Colors.white, fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        )),
+                      ],
+                    ),
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 }
 
 class _Question {
-  final String key;
-  final String icon;
-  final String text;
+  final String key, emoji, text;
   final List<String> options;
   const _Question({
-    required this.key,
-    required this.icon,
-    required this.text,
-    required this.options,
+    required this.key, required this.emoji,
+    required this.text, required this.options,
   });
 }
 
 class _QuestionTile extends StatelessWidget {
   final _Question question;
   final int value;
+  final bool isLast;
   final ValueChanged<int> onChanged;
 
   const _QuestionTile({
-    required this.question,
-    required this.value,
-    required this.onChanged,
+    required this.question, required this.value,
+    required this.isLast, required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+      decoration: BoxDecoration(
+        border: isLast ? null : Border(
+          bottom: BorderSide(color: AppColors.divider, width: 1),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(question.icon, style: const TextStyle(fontSize: 20)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  question.text,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
+          Row(children: [
+            Text(question.emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 10),
+            Expanded(child: Text(question.text, style: GoogleFonts.nunito(
+              fontSize: 14, fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ))),
+          ]),
+          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -167,28 +176,28 @@ class _QuestionTile extends StatelessWidget {
                   child: GestureDetector(
                     onTap: () => onChanged(i),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
+                      duration: const Duration(milliseconds: 160),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                          horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: selected
-                            ? AppColors.primary
-                            : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(20),
+                        gradient: selected ? AppColors.headerGradient : null,
+                        color: selected ? null : AppColors.background,
+                        borderRadius: BorderRadius.circular(50),
                         border: Border.all(
                           color: selected
-                              ? AppColors.primary
-                              : Colors.grey.shade300,
+                              ? Colors.transparent
+                              : AppColors.border,
+                          width: 1.5,
                         ),
                       ),
                       child: Text(
                         question.options[i],
-                        style: TextStyle(
+                        style: GoogleFonts.nunito(
                           fontSize: 13,
-                          color: selected ? Colors.white : AppColors.textGrey,
+                          color: selected ? Colors.white : AppColors.textMedium,
                           fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
                       ),
                     ),
@@ -197,8 +206,6 @@ class _QuestionTile extends StatelessWidget {
               }),
             ),
           ),
-          const SizedBox(height: 4),
-          Divider(color: Colors.grey.shade100),
         ],
       ),
     );

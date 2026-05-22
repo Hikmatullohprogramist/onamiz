@@ -5,7 +5,31 @@
       "Bash(git add *)",
       "Bash(git rm *)",
       "Bash(git reset *)",
-      "Bash(awk '{print $2}')"
+      "Bash(awk '{print $2}')",
+      "Bash(gh repo *)",
+      "Bash(brew list *)",
+      "Bash(brew install *)",
+      "Bash(python3 -m venv .venv)",
+      "Bash(/Users/dilshod/apps/v1_model/.venv/bin/python api.py)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s http://localhost:8000/)",
+      "Bash(python3 -m json.tool)",
+      "WebSearch",
+      "WebFetch(domain:www.fhn.org)",
+      "WebFetch(domain:www.ncbi.nlm.nih.gov)",
+      "WebFetch(domain:www.preeclampsia.org)",
+      "WebFetch(domain:obgyn.med.tma.uz)",
+      "WebFetch(domain:www.samitivejhospitals.com)",
+      "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
+      "WebFetch(domain:www.silversummithealthplan.com)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "WebFetch(domain:article.sapub.org)",
+      "WebFetch(domain:cyberleninka.ru)",
+      "WebFetch(domain:demografiya.uz)",
+      "WebFetch(domain:www.unicef.org)",
+      "WebFetch(domain:healthynewbornnetwork.org)",
+      "WebFetch(domain:www.macrotrends.net)"
     ]
   }
 }

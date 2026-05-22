@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/constants.dart';
@@ -15,34 +16,31 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pageCtrl = PageController();
   int _page = 0;
+  bool _finishing = false;
 
-  // Step 1 — Klassifikatsiya
   UserType? _userType;
 
-  // Step 2 — Asosiy ma'lumotlar
   final _nameCtrl = TextEditingController();
-  final _ageCtrl  = TextEditingController();
-  final _weekCtrl = TextEditingController();
-  Trimester? _trimester;
+  int _age     = 25;
+  int _gestWeek = 12;
+  Trimester _trimester = Trimester.T1;
 
-  // Step 3 — Sog'liq tarixi
-  int _parity         = 0;  // 0=birinchi, 1=2-3, 2=4+
-  int _anemiaLevel    = 0;
-  bool _bpHistory     = false;
+  int _parity           = 0;
+  int _anemiaLevel      = 0;
+  bool _bpHistory       = false;
   bool _diabetesHistory = false;
   bool _thyroidHistory  = false;
 
-  // Step 4 — Joylashuv + bildirishnoma
-  bool _rural         = false;
-  bool _notifEnabled  = true;
-  int  _notifHour     = 9;
+  bool _rural        = false;
+  bool _notifEnabled = true;
+  int  _notifHour    = 9;
 
   int get _totalSteps => _userType == UserType.pregnant ? 4 : 3;
 
   void _nextPage() {
     if (_page < _totalSteps - 1) {
       _pageCtrl.nextPage(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 380),
         curve: Curves.easeInOut,
       );
       setState(() => _page++);
@@ -54,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _prevPage() {
     if (_page > 0) {
       _pageCtrl.previousPage(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 380),
         curve: Curves.easeInOut,
       );
       setState(() => _page--);
@@ -62,12 +60,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
+    setState(() => _finishing = true);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(AppConstants.keyUserType,   _userType!.name);
     await prefs.setString(AppConstants.keyUserName,   _nameCtrl.text.trim());
-    await prefs.setInt(AppConstants.keyUserAge,       int.tryParse(_ageCtrl.text) ?? 25);
-    await prefs.setInt(AppConstants.keyGestWeek,      int.tryParse(_weekCtrl.text) ?? 1);
-    await prefs.setString(AppConstants.keyTrimester,  _trimester?.code ?? 'T1');
+    await prefs.setInt(AppConstants.keyUserAge,      _age);
+    await prefs.setInt(AppConstants.keyGestWeek,     _gestWeek);
+    await prefs.setString(AppConstants.keyTrimester, _trimester.code);
     await prefs.setInt(AppConstants.keyParity,        _parity);
     await prefs.setInt(AppConstants.keyAnemiaLevel,   _anemiaLevel);
     await prefs.setBool(AppConstants.keyRural,        _rural);
@@ -81,14 +80,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
 
     if (!mounted) return;
-    context.go('/dashboard');
+    context.go('/home');
   }
 
   bool get _canNext {
     switch (_page) {
       case 0: return _userType != null;
-      case 1: return (_ageCtrl.text.isNotEmpty) &&
-                     (_userType == UserType.pregnant ? _trimester != null : true);
+      case 1: return true;
       default: return true;
     }
   }
@@ -97,8 +95,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _pageCtrl.dispose();
     _nameCtrl.dispose();
-    _ageCtrl.dispose();
-    _weekCtrl.dispose();
     super.dispose();
   }
 
@@ -106,134 +102,234 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Row(
-                children: [
-                  if (_page > 0)
-                    GestureDetector(
-                      onTap: _prevPage,
-                      child: Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withValues(alpha: 0.06),
-                                blurRadius: 8, offset: const Offset(0,2))
-                          ],
-                        ),
-                        child: const Icon(Icons.chevron_left, color: AppColors.textDark),
-                      ),
-                    )
-                  else
-                    const SizedBox(width: 40),
-                  Expanded(child: _ProgressDots(current: _page, total: _totalSteps)),
-                  Text('${_page + 1}/$_totalSteps',
-                      style: const TextStyle(
-                          fontSize: 13, color: AppColors.textGrey,
-                          fontWeight: FontWeight.w500)),
-                ],
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              _TopBar(
+                page: _page,
+                total: _totalSteps,
+                onBack: _prevPage,
               ),
-            ),
-
-            // Pages
-            Expanded(
-              child: PageView(
-                controller: _pageCtrl,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _Step1(selected: _userType,
-                      onSelect: (t) => setState(() => _userType = t)),
-                  if (_userType == UserType.pregnant)
-                    _Step2Pregnant(
-                      nameCtrl: _nameCtrl, ageCtrl: _ageCtrl,
-                      weekCtrl: _weekCtrl, trimester: _trimester,
-                      onTrimester: (t) => setState(() => _trimester = t),
-                    )
-                  else
-                    _Step2Postpartum(nameCtrl: _nameCtrl, ageCtrl: _ageCtrl),
-                  _Step3Health(
-                    parity: _parity, anemiaLevel: _anemiaLevel,
-                    bpHistory: _bpHistory, diabetesHistory: _diabetesHistory,
-                    thyroidHistory: _thyroidHistory,
-                    onParity:    (v) => setState(() => _parity = v),
-                    onAnemia:    (v) => setState(() => _anemiaLevel = v),
-                    onBp:        (v) => setState(() => _bpHistory = v),
-                    onDiabetes:  (v) => setState(() => _diabetesHistory = v),
-                    onThyroid:   (v) => setState(() => _thyroidHistory = v),
-                  ),
-                  _Step4Preferences(
-                    rural: _rural, notifEnabled: _notifEnabled,
-                    notifHour: _notifHour,
-                    onRural:   (v) => setState(() => _rural = v),
-                    onNotif:   (v) => setState(() => _notifEnabled = v),
-                    onHour:    (v) => setState(() => _notifHour = v),
-                  ),
-                ],
-              ),
-            ),
-
-            // Next button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-              child: ElevatedButton(
-                onPressed: _canNext ? _nextPage : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _canNext ? AppColors.primary : AppColors.textGrey.withValues(alpha: 0.3),
-                  shadowColor: AppColors.primary.withValues(alpha: 0.4),
-                  elevation: _canNext ? 8 : 0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              Expanded(
+                child: PageView(
+                  controller: _pageCtrl,
+                  physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    Text(_page == _totalSteps - 1 ? 'Boshlash 🚀' : 'Davom etish'),
-                    if (_page < _totalSteps - 1) ...[
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_rounded, size: 18),
-                    ],
+                    _Step1(
+                      selected: _userType,
+                      onSelect: (t) => setState(() => _userType = t),
+                    ),
+                    if (_userType == UserType.pregnant)
+                      _Step2Pregnant(
+                        nameCtrl: _nameCtrl,
+                        age: _age, onAge: (v) => setState(() => _age = v),
+                        gestWeek: _gestWeek,
+                        onGestWeek: (v) => setState(() {
+                          _gestWeek = v;
+                          _trimester = TrimesterExt.fromWeek(v);
+                        }),
+                        trimester: _trimester,
+                      )
+                    else
+                      _Step2Postpartum(
+                        nameCtrl: _nameCtrl,
+                        age: _age, onAge: (v) => setState(() => _age = v),
+                      ),
+                    _Step3Health(
+                      parity: _parity, anemiaLevel: _anemiaLevel,
+                      bpHistory: _bpHistory, diabetesHistory: _diabetesHistory,
+                      thyroidHistory: _thyroidHistory,
+                      onParity:   (v) => setState(() => _parity = v),
+                      onAnemia:   (v) => setState(() => _anemiaLevel = v),
+                      onBp:       (v) => setState(() => _bpHistory = v),
+                      onDiabetes: (v) => setState(() => _diabetesHistory = v),
+                      onThyroid:  (v) => setState(() => _thyroidHistory = v),
+                    ),
+                    _Step4Preferences(
+                      rural: _rural, notifEnabled: _notifEnabled,
+                      notifHour: _notifHour,
+                      onRural:  (v) => setState(() => _rural = v),
+                      onNotif:  (v) => setState(() => _notifEnabled = v),
+                      onHour:   (v) => setState(() => _notifHour = v),
+                    ),
                   ],
                 ),
-              ).animate().fadeIn(duration: 300.ms),
-            ),
-          ],
-        ),
+              ),
+              _BottomButton(
+                page: _page,
+                total: _totalSteps,
+                enabled: _canNext,
+                finishing: _finishing,
+                onTap: _nextPage,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─── Progress dots ────────────────────────────────────────────
-class _ProgressDots extends StatelessWidget {
-  final int current, total;
-  const _ProgressDots({required this.current, required this.total});
+// ─── Top navigation bar ───────────────────────────────────────
+class _TopBar extends StatelessWidget {
+  final int page, total;
+  final VoidCallback onBack;
+  const _TopBar({required this.page, required this.total, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(total, (i) {
-        final active = i == current;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: active ? 24 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: active ? AppColors.primary : AppColors.divider,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        );
-      }),
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+        child: Column(children: [
+          Row(children: [
+            if (page > 0)
+              GestureDetector(
+                onTap: onBack,
+                child: Container(
+                  width: 42, height: 42,
+                  decoration: AppDecoration.smallCard,
+                  child: const Icon(Icons.arrow_back_rounded,
+                      color: AppColors.textMedium, size: 20),
+                ),
+              )
+            else
+              const SizedBox(width: 42),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text('${page + 1} / $total',
+                style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                  fontFamily: GoogleFonts.nunito().fontFamily,
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          _ProgressBar(current: page, total: total),
+        ]),
+      ),
     );
   }
 }
 
-// ═══ STEP 1 — Klassifikatsiya ═════════════════════════════════
+class _ProgressBar extends StatelessWidget {
+  final int current, total;
+  const _ProgressBar({required this.current, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (_, constraints) {
+      return Row(
+        children: List.generate(total, (i) {
+          final active = i <= current;
+          return Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOut,
+              height: 5,
+              margin: EdgeInsets.only(right: i < total - 1 ? 4 : 0),
+              decoration: BoxDecoration(
+                gradient: active ? AppColors.headerGradient : null,
+                color: active ? null : AppColors.divider,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }),
+      );
+    });
+  }
+}
+
+// ─── Bottom button ────────────────────────────────────────────
+class _BottomButton extends StatelessWidget {
+  final int page, total;
+  final bool enabled, finishing;
+  final VoidCallback onTap;
+  const _BottomButton({
+    required this.page, required this.total,
+    required this.enabled, required this.finishing,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isLast = page == total - 1;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        child: GestureDetector(
+          onTap: (enabled && !finishing) ? onTap : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: enabled
+                  ? AppColors.headerGradient
+                  : null,
+              color: enabled ? null : AppColors.divider,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: enabled ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ] : [],
+            ),
+            child: Center(
+              child: finishing
+                ? const SizedBox(
+                    width: 24, height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5, color: Colors.white))
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isLast ? 'Boshlash' : 'Davom etish',
+                        style: TextStyle(
+                          color: enabled ? Colors.white : AppColors.textGrey,
+                          fontSize: 16, fontWeight: FontWeight.w700,
+                          fontFamily: GoogleFonts.nunito().fontFamily,
+                        ),
+                      ),
+                      if (!isLast) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: enabled ? Colors.white : AppColors.textGrey,
+                          size: 18,
+                        ),
+                      ] else ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.rocket_launch_rounded,
+                          color: enabled ? Colors.white : AppColors.textGrey,
+                          size: 18,
+                        ),
+                      ],
+                    ],
+                  ),
+            ),
+          ),
+        ).animate().fadeIn(duration: 300.ms),
+      ),
+    );
+  }
+}
+
+// ═══ STEP 1 — User type ═══════════════════════════════════════
 class _Step1 extends StatelessWidget {
   final UserType? selected;
   final ValueChanged<UserType> onSelect;
@@ -241,166 +337,219 @@ class _Step1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final options = [
-      (UserType.pregnant,   '🤰', 'Homiladorman',
-       'Trimestga mos xavflarni kuzataman', true),
-      (UserType.postpartum, '👶', "Chaqalog'im bor",
-       "Tug'ruqdan keyingi holat va depressiya skriningi", true),
-      (UserType.planning,   '🌱', 'Rejalashtiraman',
-       'Keyingi versiyada', false),
-    ];
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SizedBox(height: 8),
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 12),
-          const Text('Salom! 👋', style: TextStyle(
-              fontSize: 28, fontWeight: FontWeight.w800,
-              color: AppColors.textDark)),
-          const SizedBox(height: 6),
-          const Text('Holatingizni tanlang',
-              style: TextStyle(fontSize: 16, color: AppColors.textGrey)),
-          const SizedBox(height: 28),
-          ...options.map((o) {
-            final (type, emoji, title, sub, enabled) = o;
-            final isSelected = selected == type;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _TypeCard(
-                emoji: emoji, title: title, subtitle: sub,
-                enabled: enabled, selected: isSelected,
-                onTap: enabled ? () => onSelect(type) : null,
-              ).animate().fadeIn(delay: (options.indexOf(o) * 80).ms, duration: 350.ms)
-               .slideX(begin: 0.05, end: 0),
-            );
-          }),
-        ],
-      ),
+        // Illustration area
+        Center(
+          child: Container(
+            width: 100, height: 100,
+            decoration: BoxDecoration(
+              gradient: AppColors.headerGradient,
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Text('🌸', style: TextStyle(fontSize: 48)),
+            ),
+          ),
+        ).animate().scale(begin: const Offset(0.7, 0.7), duration: 400.ms,
+            curve: Curves.elasticOut),
+
+        const SizedBox(height: 24),
+        Text('Salom! 👋',
+          style: GoogleFonts.nunito(
+            fontSize: 30, fontWeight: FontWeight.w800,
+            color: AppColors.textDark,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text('Holatingizni tanlang',
+          style: GoogleFonts.nunito(
+            fontSize: 16, color: AppColors.textMedium,
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        _UserTypeCard(
+          emoji: '🤰', title: 'Homiladorman',
+          subtitle: 'Trimestga mos xavflarni kuzataman',
+          enabled: true,
+          selected: selected == UserType.pregnant,
+          onTap: () => onSelect(UserType.pregnant),
+          delay: 0,
+        ),
+        const SizedBox(height: 12),
+        _UserTypeCard(
+          emoji: '👶', title: "Chaqalog'im bor",
+          subtitle: "Tug'ruqdan keyingi holat va depressiya skriningi",
+          enabled: true,
+          selected: selected == UserType.postpartum,
+          onTap: () => onSelect(UserType.postpartum),
+          delay: 80,
+        ),
+        const SizedBox(height: 12),
+        _UserTypeCard(
+          emoji: '🌱', title: 'Rejalashtiraman',
+          subtitle: 'Keyingi versiyada',
+          enabled: false,
+          selected: false,
+          onTap: null,
+          delay: 160,
+        ),
+      ]),
     );
   }
 }
 
-class _TypeCard extends StatelessWidget {
+class _UserTypeCard extends StatelessWidget {
   final String emoji, title, subtitle;
   final bool enabled, selected;
   final VoidCallback? onTap;
-  const _TypeCard({required this.emoji, required this.title,
-    required this.subtitle, required this.enabled,
-    required this.selected, required this.onTap});
+  final int delay;
+
+  const _UserTypeCard({
+    required this.emoji, required this.title, required this.subtitle,
+    required this.enabled, required this.selected,
+    required this.onTap, required this.delay,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 220),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : Colors.white,
+          color: selected ? AppColors.primaryLight : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.divider,
+            color: selected ? AppColors.primary : AppColors.border,
             width: selected ? 2 : 1.5,
           ),
           boxShadow: selected ? [
-            BoxShadow(color: AppColors.primary.withValues(alpha: 0.15),
-                blurRadius: 12, offset: const Offset(0, 4))
-          ] : [],
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              blurRadius: 16, offset: const Offset(0, 4),
+            ),
+          ] : [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12, offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(children: [
           Text(emoji, style: TextStyle(
-              fontSize: 40, color: enabled ? null : Colors.grey.shade400)),
+              fontSize: 38,
+              color: enabled ? null : Colors.grey.shade300)),
           const SizedBox(width: 16),
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Text(title, style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700,
-                  color: enabled ? (selected ? AppColors.primary : AppColors.textDark)
-                                 : AppColors.textGrey,
-                )),
+                Flexible(
+                  child: Text(title, style: GoogleFonts.nunito(
+                    fontSize: 16, fontWeight: FontWeight.w700,
+                    color: enabled
+                        ? (selected ? AppColors.primary : AppColors.textDark)
+                        : AppColors.textGrey,
+                  )),
+                ),
                 if (!enabled) ...[
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.divider,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text('Tez orada',
-                        style: TextStyle(fontSize: 10, color: AppColors.textGrey,
-                            fontWeight: FontWeight.w600)),
+                    child: Text('Tez orada', style: GoogleFonts.nunito(
+                      fontSize: 10, fontWeight: FontWeight.w600,
+                      color: AppColors.textGrey,
+                    )),
                   ),
                 ],
               ]),
               const SizedBox(height: 3),
-              Text(subtitle, style: TextStyle(
-                  fontSize: 13,
-                  color: enabled ? AppColors.textGrey : AppColors.textGrey.withValues(alpha: 0.5))),
+              Text(subtitle, style: GoogleFonts.nunito(
+                fontSize: 13,
+                color: enabled
+                    ? AppColors.textMedium
+                    : AppColors.textGrey.withValues(alpha: 0.5),
+              )),
             ],
           )),
-          if (selected) const Icon(Icons.check_circle_rounded,
-              color: AppColors.primary, size: 22)
-          else if (enabled) Icon(Icons.chevron_right,
-              color: Colors.grey.shade300, size: 22)
-          else Icon(Icons.lock_rounded, color: Colors.grey.shade300, size: 18),
+          const SizedBox(width: 8),
+          if (selected)
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: AppColors.primary, shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_rounded, color: Colors.white, size: 16),
+            )
+          else if (enabled)
+            Icon(Icons.chevron_right_rounded, color: AppColors.border, size: 24)
+          else
+            Icon(Icons.lock_rounded, color: AppColors.divider, size: 18),
         ]),
       ),
-    );
+    ).animate().fadeIn(delay: delay.ms, duration: 350.ms)
+     .slideX(begin: 0.04, end: 0);
   }
 }
 
-// ═══ STEP 2 — Homilador: asosiy ma'lumotlar ══════════════════
+// ═══ STEP 2 — Pregnant ════════════════════════════════════════
 class _Step2Pregnant extends StatelessWidget {
-  final TextEditingController nameCtrl, ageCtrl, weekCtrl;
-  final Trimester? trimester;
-  final ValueChanged<Trimester> onTrimester;
+  final TextEditingController nameCtrl;
+  final int age, gestWeek;
+  final Trimester trimester;
+  final ValueChanged<int> onAge, onGestWeek;
 
-  const _Step2Pregnant({required this.nameCtrl, required this.ageCtrl,
-    required this.weekCtrl, required this.trimester,
-    required this.onTrimester});
+  const _Step2Pregnant({
+    required this.nameCtrl,
+    required this.age, required this.onAge,
+    required this.gestWeek, required this.onGestWeek,
+    required this.trimester,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const SizedBox(height: 12),
-        const Text('Ma\'lumotlaringiz ✨', style: TextStyle(
-            fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textDark)),
-        const SizedBox(height: 6),
-        const Text('Siz haqingizda bir oz ma\'lumot',
-            style: TextStyle(fontSize: 15, color: AppColors.textGrey)),
-        const SizedBox(height: 28),
-
-        _Field(label: 'Ismingiz (ixtiyoriy)', ctrl: nameCtrl,
-            hint: 'Masalan: Malika', icon: Icons.person_outline_rounded),
-        const SizedBox(height: 16),
-        _Field(label: 'Yoshingiz', ctrl: ageCtrl,
-            hint: '25', icon: Icons.cake_outlined, isNumber: true),
-        const SizedBox(height: 16),
-        _Field(
-          label: 'Homiladorlik haftaligingiz',
-          ctrl: weekCtrl,
-          hint: '18',
-          icon: Icons.calendar_today_outlined,
-          isNumber: true,
-          onChanged: (v) {
-            final w = int.tryParse(v);
-            if (w != null && w > 0 && w <= 42) {
-              onTrimester(TrimesterExt.fromWeek(w));
-            }
-          },
+        const SizedBox(height: 8),
+        _StepHeader(
+          emoji: '✨',
+          title: "Ma'lumotlaringiz",
+          subtitle: "Siz haqingizda bir oz ma'lumot",
         ),
-
-        if (trimester != null) ...[
-          const SizedBox(height: 12),
-          _TrimesterBadge(trimester: trimester!),
-        ],
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
+        _InputField(
+          label: 'Ismingiz (ixtiyoriy)',
+          ctrl: nameCtrl,
+          hint: 'Masalan: Malika',
+          icon: Icons.person_outline_rounded,
+        ),
+        const SizedBox(height: 20),
+        _NumberStepper(
+          label: 'Yoshingiz',
+          value: age, min: 16, max: 55,
+          suffix: 'yosh',
+          onChanged: onAge,
+        ),
+        const SizedBox(height: 20),
+        _NumberStepper(
+          label: 'Homiladorlik haftasi',
+          value: gestWeek, min: 1, max: 42,
+          suffix: 'hafta',
+          onChanged: onGestWeek,
+        ),
+        const SizedBox(height: 14),
+        _TrimesterBadge(trimester: trimester),
       ]),
     );
   }
@@ -408,36 +557,54 @@ class _Step2Pregnant extends StatelessWidget {
 
 // ═══ STEP 2 — Postpartum ═════════════════════════════════════
 class _Step2Postpartum extends StatelessWidget {
-  final TextEditingController nameCtrl, ageCtrl;
-  const _Step2Postpartum({required this.nameCtrl, required this.ageCtrl});
+  final TextEditingController nameCtrl;
+  final int age;
+  final ValueChanged<int> onAge;
+  const _Step2Postpartum({
+    required this.nameCtrl, required this.age, required this.onAge,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const SizedBox(height: 12),
-        const Text('Ma\'lumotlaringiz ✨', style: TextStyle(
-            fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+        const SizedBox(height: 8),
+        _StepHeader(
+          emoji: '👶',
+          title: "Ma'lumotlaringiz",
+          subtitle: "Siz haqingizda bir oz ma'lumot",
+        ),
         const SizedBox(height: 28),
-        _Field(label: 'Ismingiz (ixtiyoriy)', ctrl: nameCtrl,
-            hint: 'Masalan: Malika', icon: Icons.person_outline_rounded),
-        const SizedBox(height: 16),
-        _Field(label: 'Yoshingiz', ctrl: ageCtrl,
-            hint: '25', icon: Icons.cake_outlined, isNumber: true),
+        _InputField(
+          label: 'Ismingiz (ixtiyoriy)',
+          ctrl: nameCtrl,
+          hint: 'Masalan: Malika',
+          icon: Icons.person_outline_rounded,
+        ),
+        const SizedBox(height: 20),
+        _NumberStepper(
+          label: 'Yoshingiz',
+          value: age, min: 16, max: 55,
+          suffix: 'yosh',
+          onChanged: onAge,
+        ),
         const SizedBox(height: 24),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: AppColors.primaryLight,
-            borderRadius: BorderRadius.circular(16),
+            gradient: AppColors.softPinkGradient,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
           ),
-          child: const Row(children: [
-            Text('👶', style: TextStyle(fontSize: 28)),
-            SizedBox(width: 12),
+          child: Row(children: [
+            const Text('💜', style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 14),
             Expanded(child: Text(
-              'Tug\'ruqdan keyingi davrda onaning ruhiy va jismoniy holati kuzatiladi.',
-              style: TextStyle(fontSize: 13, color: AppColors.textMedium, height: 1.4),
+              "Tug'ruqdan keyingi davrda onaning ruhiy va jismoniy holati kuzatiladi.",
+              style: GoogleFonts.nunito(
+                fontSize: 13, color: AppColors.textMedium, height: 1.5,
+              ),
             )),
           ]),
         ),
@@ -446,7 +613,7 @@ class _Step2Postpartum extends StatelessWidget {
   }
 }
 
-// ═══ STEP 3 — Sog'liq tarixi ═════════════════════════════════
+// ═══ STEP 3 — Health history ══════════════════════════════════
 class _Step3Health extends StatelessWidget {
   final int parity, anemiaLevel;
   final bool bpHistory, diabetesHistory, thyroidHistory;
@@ -464,55 +631,54 @@ class _Step3Health extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const SizedBox(height: 12),
-        const Text('Sog\'liq tarixi 🏥', style: TextStyle(
-            fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textDark)),
-        const SizedBox(height: 6),
-        const Text('Bu ma\'lumotlar aniqroq tahlil uchun kerak',
-            style: TextStyle(fontSize: 15, color: AppColors.textGrey)),
+        const SizedBox(height: 8),
+        _StepHeader(
+          emoji: '🏥',
+          title: "Sog'liq tarixi",
+          subtitle: "Bu ma'lumotlar aniqroq tahlil uchun kerak",
+        ),
         const SizedBox(height: 28),
 
         _SectionLabel('Nechinci homiladorligingiz?'),
         const SizedBox(height: 10),
-        _ChipGroup(
-          options: ['Birinchi', '2-3 marta', '4 va undan ko\'p'],
+        _ChipRow(
+          options: ['Birinchi', '2–3 marta', '4 yoki ko\'proq'],
           selected: parity, onSelect: onParity,
         ),
 
-        const SizedBox(height: 20),
-        _SectionLabel('Kamqonlik (anemiya) bor?'),
+        const SizedBox(height: 22),
+        _SectionLabel('Kamqonlik (anemiya) darajasi'),
         const SizedBox(height: 10),
-        _ChipGroup(
-          options: ['Yo\'q', 'Yengil', 'O\'rta', 'Og\'ir'],
+        _ChipRow(
+          options: ["Yo'q", 'Yengil', "O'rta", "Og'ir"],
           selected: anemiaLevel, onSelect: onAnemia,
         ),
 
-        const SizedBox(height: 20),
-        _SectionLabel('Kasallik tarixingizda bor?'),
+        const SizedBox(height: 22),
+        _SectionLabel('Kasallik tarixingizda bormi?'),
         const SizedBox(height: 10),
         _ToggleTile(
           label: '🩸 Yuqori qon bosimi',
           value: bpHistory, onChanged: onBp,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         _ToggleTile(
           label: '🍬 Qandli diabet',
           value: diabetesHistory, onChanged: onDiabetes,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         _ToggleTile(
           label: '🦋 Qalqonsimon bez muammosi',
           value: thyroidHistory, onChanged: onThyroid,
         ),
-        const SizedBox(height: 16),
       ]),
     );
   }
 }
 
-// ═══ STEP 4 — Joylashuv + Bildirishnoma ══════════════════════
+// ═══ STEP 4 — Preferences ════════════════════════════════════
 class _Step4Preferences extends StatelessWidget {
   final bool rural, notifEnabled;
   final int notifHour;
@@ -528,16 +694,19 @@ class _Step4Preferences extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const SizedBox(height: 12),
-        const Text('So\'nggi sozlamalar ⚙️', style: TextStyle(
-            fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+        const SizedBox(height: 8),
+        _StepHeader(
+          emoji: '⚙️',
+          title: "So'nggi sozlamalar",
+          subtitle: "Deyarli tayyor!",
+        ),
         const SizedBox(height: 28),
 
         _SectionLabel('Joylashuvingiz'),
         const SizedBox(height: 10),
-        _ChipGroup(
+        _ChipRow(
           options: ['🏙️ Shahar', '🌾 Qishloq / tuman'],
           selected: rural ? 1 : 0,
           onSelect: (v) => onRural(v == 1),
@@ -552,28 +721,27 @@ class _Step4Preferences extends StatelessWidget {
         ),
 
         if (notifEnabled) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _SectionLabel('Eslatma vaqti'),
           const SizedBox(height: 10),
-          _TimeSelector(selected: notifHour, onSelect: onHour),
+          _TimeGrid(selected: notifHour, onSelect: onHour),
         ],
 
         const SizedBox(height: 24),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primary.withValues(alpha: 0.1),
-                       AppColors.secondary.withValues(alpha: 0.1)],
-            ),
-            borderRadius: BorderRadius.circular(16),
+            gradient: AppColors.headerGradient,
+            borderRadius: BorderRadius.circular(20),
           ),
-          child: const Row(children: [
-            Text('🌸', style: TextStyle(fontSize: 28)),
-            SizedBox(width: 12),
+          child: Row(children: [
+            const Text('🌸', style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 14),
             Expanded(child: Text(
-              'Onamiz doimo yoningizda! Har kuni bir daqiqa vaqt ajrating — sog\'ligingiz muhim.',
-              style: TextStyle(fontSize: 13, color: AppColors.textMedium, height: 1.4),
+              "Onamiz doimo yoningizda! Har kuni bir daqiqa vaqt ajrating — sog'ligingiz muhim.",
+              style: GoogleFonts.nunito(
+                fontSize: 13, color: Colors.white, height: 1.5,
+              ),
             )),
           ]),
         ),
@@ -582,48 +750,60 @@ class _Step4Preferences extends StatelessWidget {
   }
 }
 
-// ─── Yordamchi widgetlar ──────────────────────────────────────
+// ─── Shared widgets ───────────────────────────────────────────
 
-class _Field extends StatelessWidget {
-  final String label, hint;
-  final TextEditingController ctrl;
-  final IconData icon;
-  final bool isNumber;
-  final ValueChanged<String>? onChanged;
-
-  const _Field({required this.label, required this.ctrl,
-    required this.hint, required this.icon,
-    this.isNumber = false, this.onChanged});
+class _StepHeader extends StatelessWidget {
+  final String emoji, title, subtitle;
+  const _StepHeader({
+    required this.emoji, required this.title, required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(
-          fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+      Container(
+        width: 56, height: 56,
+        decoration: BoxDecoration(
+          gradient: AppColors.softPinkGradient,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 26))),
+      ),
+      const SizedBox(height: 16),
+      Text(title, style: GoogleFonts.nunito(
+        fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textDark,
+      )),
+      const SizedBox(height: 4),
+      Text(subtitle, style: GoogleFonts.nunito(
+        fontSize: 15, color: AppColors.textMedium,
+      )),
+    ]);
+  }
+}
+
+class _InputField extends StatelessWidget {
+  final String label, hint;
+  final TextEditingController ctrl;
+  final IconData icon;
+  const _InputField({
+    required this.label, required this.ctrl,
+    required this.hint, required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: GoogleFonts.nunito(
+        fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark,
+      )),
       const SizedBox(height: 8),
       TextField(
         controller: ctrl,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        onChanged: onChanged,
+        style: GoogleFonts.nunito(fontSize: 15, color: AppColors.textDark),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: AppColors.textGrey, fontSize: 15),
           prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.divider, width: 1.5),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.divider, width: 1.5),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-          ),
         ),
       ),
     ]);
@@ -642,20 +822,25 @@ class _TrimesterBadge extends StatelessWidget {
       Trimester.T3 => AppColors.t3Color,
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.check_circle_outline, color: color, size: 16),
-        const SizedBox(width: 8),
+        Container(
+          width: 8, height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 10),
         Text('${trimester.label} — ${trimester.weeks}',
-            style: TextStyle(color: color, fontSize: 14,
-                fontWeight: FontWeight.w600)),
+          style: GoogleFonts.nunito(
+            color: color, fontSize: 14, fontWeight: FontWeight.w700,
+          ),
+        ),
       ]),
-    ).animate().fadeIn(duration: 200.ms).scale(begin: const Offset(0.95, 0.95));
+    ).animate().fadeIn(duration: 200.ms).slideY(begin: 0.1, end: 0);
   }
 }
 
@@ -664,34 +849,46 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text);
   @override
   Widget build(BuildContext context) => Text(text,
-    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-        color: AppColors.textDark));
+    style: GoogleFonts.nunito(
+      fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark,
+    ));
 }
 
-class _ChipGroup extends StatelessWidget {
+class _ChipRow extends StatelessWidget {
   final List<String> options;
   final int selected;
   final ValueChanged<int> onSelect;
-  const _ChipGroup({required this.options, required this.selected,
-    required this.onSelect});
+  const _ChipRow({
+    required this.options, required this.selected, required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(spacing: 8, runSpacing: 8,
+    return Wrap(
+      spacing: 8, runSpacing: 8,
       children: List.generate(options.length, (i) {
         final active = selected == i;
         return GestureDetector(
           onTap: () => onSelect(i),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
-              color: active ? AppColors.primary : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              gradient: active ? AppColors.headerGradient : null,
+              color: active ? null : AppColors.surface,
+              borderRadius: BorderRadius.circular(50),
               border: Border.all(
-                color: active ? AppColors.primary : AppColors.divider, width: 1.5),
+                color: active ? Colors.transparent : AppColors.border,
+                width: 1.5,
+              ),
+              boxShadow: active ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.25),
+                  blurRadius: 8, offset: const Offset(0, 3),
+                ),
+              ] : [],
             ),
-            child: Text(options[i], style: TextStyle(
+            child: Text(options[i], style: GoogleFonts.nunito(
               fontSize: 13, fontWeight: FontWeight.w600,
               color: active ? Colors.white : AppColors.textMedium,
             )),
@@ -706,30 +903,39 @@ class _ToggleTile extends StatelessWidget {
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
-  const _ToggleTile({required this.label, required this.value,
-    required this.onChanged});
+  const _ToggleTile({
+    required this.label, required this.value, required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => onChanged(!value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.fromLTRB(18, 14, 8, 14),
         decoration: BoxDecoration(
-          color: value ? AppColors.primaryLight : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: value ? AppColors.primaryLight : AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: value ? AppColors.primary : AppColors.divider, width: 1.5),
+            color: value ? AppColors.primary : AppColors.border,
+            width: 1.5,
+          ),
         ),
         child: Row(children: [
-          Expanded(child: Text(label, style: TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w500,
+          Expanded(child: Text(label, style: GoogleFonts.nunito(
+            fontSize: 14, fontWeight: FontWeight.w600,
             color: value ? AppColors.primary : AppColors.textMedium,
           ))),
-          Switch(
-            value: value, onChanged: onChanged,
-            activeColor: AppColors.primary,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          Transform.scale(
+            scale: 0.85,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: AppColors.primary,
+              activeTrackColor: AppColors.primaryLight,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
         ]),
       ),
@@ -737,10 +943,10 @@ class _ToggleTile extends StatelessWidget {
   }
 }
 
-class _TimeSelector extends StatelessWidget {
+class _TimeGrid extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onSelect;
-  const _TimeSelector({required this.selected, required this.onSelect});
+  const _TimeGrid({required this.selected, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
@@ -753,20 +959,112 @@ class _TimeSelector extends StatelessWidget {
           onTap: () => onSelect(h),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
-              color: active ? AppColors.primary : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              gradient: active ? AppColors.headerGradient : null,
+              color: active ? null : AppColors.surface,
+              borderRadius: BorderRadius.circular(50),
               border: Border.all(
-                color: active ? AppColors.primary : AppColors.divider, width: 1.5),
+                color: active ? Colors.transparent : AppColors.border,
+                width: 1.5,
+              ),
             ),
-            child: Text('$h:00', style: TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w600,
+            child: Text('$h:00', style: GoogleFonts.nunito(
+              fontSize: 13, fontWeight: FontWeight.w600,
               color: active ? Colors.white : AppColors.textMedium,
             )),
           ),
         );
       }).toList(),
     );
+  }
+}
+
+class _NumberStepper extends StatelessWidget {
+  final String label;
+  final int value, min, max;
+  final String suffix;
+  final ValueChanged<int> onChanged;
+
+  const _NumberStepper({
+    required this.label, required this.value,
+    required this.min, required this.max,
+    required this.suffix, required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final canDec = value > min;
+    final canInc = value < max;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: GoogleFonts.nunito(
+        fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark,
+      )),
+      const SizedBox(height: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border, width: 1.5),
+        ),
+        child: Row(children: [
+          // Minus
+          GestureDetector(
+            onTap: canDec ? () => onChanged(value - 1) : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: canDec ? AppColors.primaryLight : AppColors.divider,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.remove_rounded,
+                color: canDec ? AppColors.primary : AppColors.textGrey,
+                size: 20),
+            ),
+          ),
+          // Value
+          Expanded(child: Center(child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('$value', style: GoogleFonts.nunito(
+                fontSize: 34, fontWeight: FontWeight.w800,
+                color: AppColors.textDark, height: 1,
+              )),
+              const SizedBox(width: 6),
+              Text(suffix, style: GoogleFonts.nunito(
+                fontSize: 14, color: AppColors.textMedium,
+                fontWeight: FontWeight.w600,
+              )),
+            ],
+          ))),
+          // Plus
+          GestureDetector(
+            onTap: canInc ? () => onChanged(value + 1) : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                gradient: canInc ? AppColors.headerGradient : null,
+                color: canInc ? null : AppColors.divider,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: canInc ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 8, offset: const Offset(0, 3),
+                  ),
+                ] : [],
+              ),
+              child: Icon(Icons.add_rounded,
+                color: canInc ? Colors.white : AppColors.textGrey,
+                size: 20),
+            ),
+          ),
+        ]),
+      ),
+    ]);
   }
 }
