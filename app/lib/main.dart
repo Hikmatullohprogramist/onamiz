@@ -10,7 +10,11 @@ void main() async {
 
 
   initializeDateFormatting("uz", "");
-  await NotificationService.init();
+  try {
+    await NotificationService.init();
+  } catch (_) {
+    // Native assets may not be linked on hot restart — full rebuild fixes this
+  }
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,

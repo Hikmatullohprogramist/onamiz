@@ -20,9 +20,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   UserType? _userType;
 
-  final _nameCtrl = TextEditingController();
-  int _age     = 25;
-  int _gestWeek = 12;
+  final _nameCtrl  = TextEditingController();
+  int _age         = 25;
+  int _gestWeek    = 12;
+  int _babyMonths  = 1;   // postpartum uchun
   Trimester _trimester = Trimester.T1;
 
   int _parity           = 0;
@@ -64,8 +65,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(AppConstants.keyUserType,   _userType!.name);
     await prefs.setString(AppConstants.keyUserName,   _nameCtrl.text.trim());
-    await prefs.setInt(AppConstants.keyUserAge,      _age);
-    await prefs.setInt(AppConstants.keyGestWeek,     _gestWeek);
+    await prefs.setInt(AppConstants.keyUserAge,        _age);
+    await prefs.setInt(AppConstants.keyGestWeek,       _gestWeek);
+    await prefs.setInt(AppConstants.keyBabyBirthMonth, _babyMonths);
     await prefs.setString(AppConstants.keyTrimester, _trimester.code);
     await prefs.setInt(AppConstants.keyParity,        _parity);
     await prefs.setInt(AppConstants.keyAnemiaLevel,   _anemiaLevel);
@@ -134,7 +136,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     else
                       _Step2Postpartum(
                         nameCtrl: _nameCtrl,
-                        age: _age, onAge: (v) => setState(() => _age = v),
+                        babyMonths: _babyMonths,
+                        onBabyMonths: (v) => setState(() => _babyMonths = v),
                       ),
                     _Step3Health(
                       parity: _parity, anemiaLevel: _anemiaLevel,
@@ -558,11 +561,19 @@ class _Step2Pregnant extends StatelessWidget {
 // ═══ STEP 2 — Postpartum ═════════════════════════════════════
 class _Step2Postpartum extends StatelessWidget {
   final TextEditingController nameCtrl;
-  final int age;
-  final ValueChanged<int> onAge;
+  final int babyMonths;
+  final ValueChanged<int> onBabyMonths;
   const _Step2Postpartum({
-    required this.nameCtrl, required this.age, required this.onAge,
+    required this.nameCtrl,
+    required this.babyMonths,
+    required this.onBabyMonths,
   });
+
+  String get _monthLabel {
+    if (babyMonths == 0) return 'Yangi tug\'ilgan';
+    if (babyMonths == 1) return '1 oylik';
+    return '$babyMonths oylik';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -572,8 +583,8 @@ class _Step2Postpartum extends StatelessWidget {
         const SizedBox(height: 8),
         _StepHeader(
           emoji: '👶',
-          title: "Ma'lumotlaringiz",
-          subtitle: "Siz haqingizda bir oz ma'lumot",
+          title: "Chaqalog'ingiz",
+          subtitle: "Bola haqida ma'lumot",
         ),
         const SizedBox(height: 28),
         _InputField(
@@ -584,12 +595,29 @@ class _Step2Postpartum extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         _NumberStepper(
-          label: 'Yoshingiz',
-          value: age, min: 16, max: 55,
-          suffix: 'yosh',
-          onChanged: onAge,
+          label: "Chaqalog'ingiz necha oylik?",
+          value: babyMonths, min: 0, max: 24,
+          suffix: 'oy',
+          onChanged: onBabyMonths,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+        // Month badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Text('🍼', style: TextStyle(fontSize: 14)),
+            const SizedBox(width: 8),
+            Text(_monthLabel, style: GoogleFonts.nunito(
+              fontSize: 13, fontWeight: FontWeight.w700,
+              color: AppColors.primary)),
+          ]),
+        ),
+        const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -603,8 +631,7 @@ class _Step2Postpartum extends StatelessWidget {
             Expanded(child: Text(
               "Tug'ruqdan keyingi davrda onaning ruhiy va jismoniy holati kuzatiladi.",
               style: GoogleFonts.nunito(
-                fontSize: 13, color: AppColors.textMedium, height: 1.5,
-              ),
+                fontSize: 13, color: AppColors.textMedium, height: 1.5),
             )),
           ]),
         ),

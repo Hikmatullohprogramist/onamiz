@@ -37,10 +37,36 @@ dependencies:
   # Fonts
   google_fonts: ^6.1.0
 
+  # Splash
+  flutter_native_splash: ^2.4.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: false
+
+flutter_native_splash:
+  color: "#7B3FB0"
+  color_dark: "#7B3FB0"
+  image: assets/images/logo.png
+  android: true
+  ios: true
+  fullscreen: true
+  android_gravity: center
+  ios_content_mode: center
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/icon/
+    - assets/images/

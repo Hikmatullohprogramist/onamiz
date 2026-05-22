@@ -17,9 +17,16 @@ class AppConstants {
   static const keyNotifHour      = 'notif_hour';
   static const keyNotifEnabled   = 'notif_enabled';
   static const keyCheckHistory   = 'check_history'; // JSON list
+  static const keyActivityHours = 'activity_hours'; // 0-3
+  static const keyBabyGender    = 'baby_gender';    // 'boy'|'girl'
+  static const keyBabyBirthMonth = 'baby_birth_month'; // months old
+  static const keyBabyHeight    = 'baby_height';
+  static const keyBabyWeight    = 'baby_weight';
+  static const keyCalendarEvents = 'calendar_events'; // JSON list
 }
 
 enum UserType { pregnant, postpartum, planning }
+enum BabyGender { boy, girl }
 
 enum Trimester { T1, T2, T3 }
 

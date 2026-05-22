@@ -11,10 +11,11 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
     final index = switch (location) {
-      '/home'    => 0,
-      '/history' => 1,
-      '/profile' => 2,
-      _          => 0,
+      '/home'     => 0,
+      '/history'  => 1,
+      '/calendar' => 2,
+      '/profile'  => 3,
+      _           => 0,
     };
 
     return Scaffold(
@@ -26,7 +27,8 @@ class AppShell extends StatelessWidget {
           switch (i) {
             case 0: context.go('/home');
             case 1: context.go('/history');
-            case 2: context.go('/profile');
+            case 2: context.go('/calendar');
+            case 3: context.go('/profile');
           }
         },
       ),
@@ -39,69 +41,67 @@ class _BottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
   const _BottomNav({required this.currentIndex, required this.onTap});
 
+  static const _items = [
+    (Icons.house_rounded,         Icons.house_outlined,          'Bosh sahifa'),
+    (Icons.history_rounded,       Icons.history_outlined,        'Tarix'),
+    (Icons.calendar_month,        Icons.calendar_month_outlined, 'Kalendar'),
+    (Icons.person_2_rounded,      Icons.person_2_outlined,       'Profil'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final items = [
-      (Icons.home_rounded,            Icons.home_outlined,           'Bosh sahifa'),
-      (Icons.calendar_month_rounded,  Icons.calendar_month_outlined, 'Tarix'),
-      (Icons.person_rounded,          Icons.person_outline_rounded,  'Profil'),
-    ];
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        border: Border(
+          top: BorderSide(color: AppColors.divider, width: 1),
+        ),
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: SizedBox(
+          height: 56,
           child: Row(
-            children: items.asMap().entries.map((entry) {
-              final i = entry.key;
-              final item = entry.value;
+            children: List.generate(_items.length, (i) {
               final active = currentIndex == i;
+              final item   = _items[i];
               return Expanded(
                 child: GestureDetector(
                   onTap: () => onTap(i),
                   behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: active ? AppColors.primaryLight : Colors.transparent,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: Icon(
-                            active ? item.$1 : item.$2,
-                            key: ValueKey(active),
-                            color: active ? AppColors.primary : AppColors.textGrey,
-                            size: 24,
-                          ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: active
+                              ? AppColors.primary.withValues(alpha: 0.12)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        const SizedBox(height: 4),
-                        Text(item.$3, style: GoogleFonts.nunito(
-                          fontSize: 11,
+                        child: Icon(
+                          active ? item.$1 : item.$2,
+                          size: 22,
                           color: active ? AppColors.primary : AppColors.textGrey,
-                          fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                        )),
-                      ],
-                    ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(item.$3, style: GoogleFonts.nunito(
+                        fontSize: 10,
+                        fontWeight:
+                            active ? FontWeight.w700 : FontWeight.w500,
+                        color:
+                            active ? AppColors.primary : AppColors.textGrey,
+                      )),
+                    ],
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ),
         ),
       ),

@@ -39,6 +39,18 @@ class AppColors {
   static const t2Color = Color(0xFF9B78CC);
   static const t3Color = Color(0xFFF4956A);
 
+  // ── Baby gender themes ───────────────────────────────────────
+  static const boyPrimary    = Color(0xFF4A90D9);
+  static const boyLight      = Color(0xFFE8F4FD);
+  static const girlPrimary   = Color(0xFFD86080);
+  static const girlLight     = Color(0xFFFDEDF2);
+
+  static const boyGradient = LinearGradient(
+    colors: [Color(0xFF5BA3E8), Color(0xFF7B68CC)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   // ── Gradients ────────────────────────────────────────────────
   static const headerGradient = LinearGradient(
     colors: [Color(0xFFE07090), Color(0xFF9B78CC)],
