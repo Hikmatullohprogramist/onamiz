@@ -77,8 +77,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool(AppConstants.keyOnboardingDone, true);
 
     if (_notifEnabled) {
-      await NotificationService.requestPermission();
-      await NotificationService.scheduleDailyCheck(hour: _notifHour);
+      try {
+        await NotificationService.requestPermission();
+        await NotificationService.scheduleDailyCheck(hour: _notifHour);
+      } catch (e) {
+        debugPrint('Notification setup failed: $e');
+      }
     }
 
     if (!mounted) return;

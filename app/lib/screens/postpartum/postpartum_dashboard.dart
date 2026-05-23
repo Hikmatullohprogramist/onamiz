@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -229,7 +230,8 @@ class _InfoBadge extends StatelessWidget {
       Text(text, style: GoogleFonts.nunito(
         fontSize: 11, color: Colors.white,
         fontWeight: FontWeight.w600)),
-    ]),
+    ])
+    ,
   );
 }
 
@@ -247,6 +249,8 @@ class _CryTranslatorState extends State<_CryTranslator>
   // States: idle → recording → analyzing → result
   String _state = 'idle'; // idle | recording | analyzing | result
   CryType? _result;
+  int _confidence = 0;
+  List<({CryType type, int percent})> _alternatives = const [];
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
 
@@ -279,15 +283,36 @@ class _CryTranslatorState extends State<_CryTranslator>
 
       Future.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted) return;
-        // Mock API response — random cry type
-        final mockResult = babyCryTypes[
-            DateTime.now().millisecond % babyCryTypes.length];
-        setState(() { _state = 'result'; _result = mockResult; });
+        // Mock API response — random cry type with moderate confidence
+        final rng = Random();
+        final shuffled = [...babyCryTypes]..shuffle(rng);
+        final main = shuffled.first;
+        // Realistik, "past" ishonch oralig'i: 52–74%
+        final mainPct = 52 + rng.nextInt(23);
+        // 2 ta muqobil — qolgan foizdan ulush
+        int remaining = 100 - mainPct;
+        final alt1Pct = (remaining * (0.45 + rng.nextDouble() * 0.2)).round();
+        final alt2Pct = remaining - alt1Pct;
+        final alts = <({CryType type, int percent})>[
+          (type: shuffled[1], percent: alt1Pct),
+          (type: shuffled[2], percent: alt2Pct),
+        ];
+        setState(() {
+          _state = 'result';
+          _result = main;
+          _confidence = mainPct;
+          _alternatives = alts;
+        });
       });
     });
   }
 
-  void _reset() => setState(() { _state = 'idle'; _result = null; });
+  void _reset() => setState(() {
+    _state = 'idle';
+    _result = null;
+    _confidence = 0;
+    _alternatives = const [];
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -433,16 +458,85 @@ class _CryTranslatorState extends State<_CryTranslator>
                   Text("Chaqalog'ingiz...", style: GoogleFonts.nunito(
                     fontSize: 11, color: AppColors.textGrey,
                     fontWeight: FontWeight.w500)),
-                  Text(_result!.label, style: GoogleFonts.nunito(
-                    fontSize: 20, fontWeight: FontWeight.w800,
-                    color: widget.primary)),
+                  Row(children: [
+                    Flexible(child: Text(_result!.label,
+                      style: GoogleFonts.nunito(
+                        fontSize: 20, fontWeight: FontWeight.w800,
+                        color: widget.primary))),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: widget.primary,
+                        borderRadius: BorderRadius.circular(10)),
+                      child: Text('$_confidence%',
+                        style: GoogleFonts.nunito(
+                          fontSize: 12, fontWeight: FontWeight.w800,
+                          color: Colors.white)),
+                    ),
+                  ]),
                 ])),
               ]),
+              const SizedBox(height: 10),
+              // Confidence bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: _confidence / 100,
+                  minHeight: 6,
+                  backgroundColor: Colors.white,
+                  valueColor: AlwaysStoppedAnimation(widget.primary),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                "Taxminiy ishonch darajasi — aniq tashxis emas",
+                style: GoogleFonts.nunito(
+                  fontSize: 10.5, color: AppColors.textGrey,
+                  fontStyle: FontStyle.italic),
+              ),
               const SizedBox(height: 12),
               Text(_result!.description, style: GoogleFonts.nunito(
                 fontSize: 12, color: AppColors.textGrey,
                 fontStyle: FontStyle.italic, height: 1.4)),
               const SizedBox(height: 12),
+              // Alternatives
+              if (_alternatives.isNotEmpty) ...[
+                Text("Boshqa ehtimollar:", style: GoogleFonts.nunito(
+                  fontSize: 11, fontWeight: FontWeight.w700,
+                  color: AppColors.textGrey)),
+                const SizedBox(height: 8),
+                ..._alternatives.map((a) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(children: [
+                    Text(a.type.emoji,
+                        style: const TextStyle(fontSize: 14)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(a.type.label,
+                      style: GoogleFonts.nunito(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppColors.textMedium))),
+                    SizedBox(width: 70, child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: a.percent / 100,
+                        minHeight: 4,
+                        backgroundColor: Colors.white,
+                        valueColor: AlwaysStoppedAnimation(
+                            widget.primary.withValues(alpha: 0.4)),
+                      ),
+                    )),
+                    const SizedBox(width: 8),
+                    SizedBox(width: 30, child: Text('${a.percent}%',
+                      textAlign: TextAlign.end,
+                      style: GoogleFonts.nunito(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: AppColors.textGrey))),
+                  ]),
+                )),
+                const SizedBox(height: 12),
+              ],
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(

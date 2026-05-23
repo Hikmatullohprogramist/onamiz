@@ -1016,11 +1016,20 @@ class _TipsSectionState extends State<_TipsSection>
             dividerColor: Colors.transparent,
             tabs: tabs.map((t) => Tab(
               height: 36,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(t.$1, style: const TextStyle(fontSize: 13)),
-                const SizedBox(width: 4),
-                Text(t.$2),
-              ]),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(t.$1, style: const TextStyle(fontSize: 13)),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      t.$2,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             )).toList(),
           ),
         ),

@@ -196,17 +196,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               )),
             ]),
-            title: Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Text('Profil', style: GoogleFonts.nunito(
-                color: AppColors.textDark,
-                fontSize: 17, fontWeight: FontWeight.w800,
-              )),
-            ),
+            // title: Padding(
+            //   padding: const EdgeInsets.only(left: 4),
+            //   child: Text('Profil', style: GoogleFonts.nunito(
+            //     color: AppColors.textDark,
+            //     fontSize: 17, fontWeight: FontWeight.w800,
+            //   )),
+            // ),
             titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
             collapseMode: CollapseMode.parallax,
           ),
         ),
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
 
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
