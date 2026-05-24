@@ -1,6 +1,7 @@
 """
-Onamiz v4 — Simptom asosida xavf bashorati
-42 ta xavf, 39 ta feature
+Onamiz v5 — Simptom asosida xavf bashorati
+42 ta xavf, 39 ta feature + 9 interaksiya feature
+v4 bilan orqaga mos (v5 modeli yo'q bo'lsa v4 ishlatiladi)
 """
 
 from pathlib import Path
@@ -9,21 +10,75 @@ import joblib
 import numpy as np
 import pandas as pd
 
-ROOT       = Path(__file__).parent
-MODEL_PATH = ROOT / "models" / "onamiz_v4.joblib"
+ROOT         = Path(__file__).parent
+MODEL_V5     = ROOT / "models" / "onamiz_v5.joblib"
+MODEL_V4     = ROOT / "models" / "onamiz_v4.joblib"
 
 _cache: Dict[str, Any] = {}
 
 
 def _load():
     if "model" not in _cache:
-        if not MODEL_PATH.exists():
+        path = MODEL_V5 if MODEL_V5.exists() else MODEL_V4
+        if not path.exists():
             raise FileNotFoundError(
-                f"Model topilmadi: {MODEL_PATH}\n"
-                "Colab dan onamiz_v4.joblib yuklab, models/ papkasiga joylashtiring."
+                f"Model topilmadi: {MODEL_V5}\n"
+                "train_v5.py ishga tushiring yoki Colab dan yuklab, models/ papkasiga joylashtiring."
             )
-        _cache["model"] = joblib.load(MODEL_PATH)
+        _cache["model"] = joblib.load(path)
+        _cache["model_path"] = str(path)
     return _cache["model"]
+
+
+def _add_interactions(features: Dict) -> Dict:
+    """Interaksiya featurelarni hisoblash (v5 model uchun)."""
+    bp  = features.get("systolic_bp", 120)
+    dbp = features.get("diastolic_bp", 80)
+    hr  = features.get("heart_rate", 82)
+
+    return {
+        **features,
+        "bp_score": round(max(0, bp - 120) / 10 + max(0, dbp - 80) / 5, 2),
+        "preeclampsia_index": round(
+            features.get("headache_severity", 0) * features.get("visual_disturbance", 0)
+            + (2 if bp >= 140 else 0) + (3 if bp >= 160 else 0)
+            + features.get("edema_level", 0) * 0.5, 2
+        ),
+        "anemia_risk_idx": round(
+            features.get("anemia_level", 0) * 2
+            + features.get("dizziness", 0)
+            + max(0, hr - 90) / 10, 2
+        ),
+        "movement_alert": (
+            {0:0, 1:1, 2:3}.get(features.get("fetal_movement", 0), 0)
+            + {0:0, 1:1, 2:3}.get(features.get("fetal_movement_t3", 0), 0)
+        ),
+        "emergency_flag": sum([
+            features.get("vaginal_bleeding", 0) == 2,
+            features.get("one_sided_pain", 0) == 1,
+            features.get("visual_disturbance", 0) == 1,
+            features.get("fetal_movement", 0) == 2,
+            features.get("fluid_leaking", 0) == 1,
+            features.get("bleeding_with_pain", 0) == 1,
+            features.get("fetal_movement_t3", 0) == 2,
+            features.get("painless_bleeding", 0) == 2,
+        ]),
+        "trimester_age_risk": round(
+            int(features.get("age", 25) < 18 or features.get("age", 25) > 40)
+            + features.get("trimester_enc", 1) * 0.3
+            + features.get("prev_miscarriage", 0) * 0.5, 2
+        ),
+        "uzbek_risk_idx": (
+            features.get("anemia_level", 0)
+            + features.get("rural", 0)
+            + (2 if features.get("prenatal_visits", 1) == 0 else 0)
+            + features.get("nutrition_poor", 0)
+            + features.get("pph_history", 0)
+            + int(features.get("iron_supplement", 1) == 0) * features.get("anemia_level", 0)
+        ),
+        "icp_index": features.get("itching_palms_soles", 0) * features.get("trimester_enc", 1),
+        "gdm_index": features.get("fasting_glucose", 0) + features.get("belly_very_large", 0),
+    }
 
 
 # ─── Tavsiyalar ──────────────────────────────────────────────
@@ -90,6 +145,11 @@ def predict_symptom_risk(features: Dict[str, Any], lang: str = "uz") -> Dict[str
     scaler       = art["scaler"]
     model        = art["model"]
     le_y         = art["label_encoder"]
+    version      = art.get("version", "v4")
+
+    # v5 modelida interaksiya featurelar qo'shiladi
+    if version == "v5":
+        features = _add_interactions(features)
 
     # Noma'lum featurelar 0
     row = {col: features.get(col, 0) for col in feature_cols}
