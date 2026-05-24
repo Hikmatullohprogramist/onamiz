@@ -1,0 +1,6 @@
+class,count,pct,class_weight
+hungry,382,83.6,0.239
+tired,24,5.3,3.808
+discomfort,27,5.9,3.385
+burping,8,1.8,11.425
+belly_pain,16,3.5,5.712

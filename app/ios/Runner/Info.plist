@@ -4,6 +4,8 @@
 	<dict>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Chaqaloq yig'isini tahlil qilish uchun mikrofonga ruxsat kerak. Audio telefoningizdan tashqariga yuborilmaydi.</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>

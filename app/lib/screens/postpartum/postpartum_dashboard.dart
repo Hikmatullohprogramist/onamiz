@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../data/baby_monthly_data.dart';
+import '../../services/cry_analyzer.dart';
 
 class PostpartumDashboard extends StatefulWidget {
   const PostpartumDashboard({super.key});
@@ -107,42 +107,12 @@ class _PostpartumDashboardState extends State<PostpartumDashboard> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
           sliver: SliverList(delegate: SliverChildListDelegate([
 
-            // ── Baby info card ─────────────────────────────
-            _BabyInfoCard(
-              babyName: _babyName,
-              months: _babyMonths,
-              isBoy: _isBoy,
-              primary: _primary,
-              light: _light,
-            ).animate().fadeIn(duration: 400.ms),
-
-            const SizedBox(height: 16),
-
-            // ── Cry translator ─────────────────────────────
+            // ── Cry translator (asosiy fokus) ──────────────
             _CryTranslator(primary: _primary, light: _light)
-                .animate().fadeIn(delay: 80.ms, duration: 400.ms),
+                .animate().fadeIn(duration: 400.ms),
 
-            const SizedBox(height: 20),
-
-            // ── Monthly development ────────────────────────
-            _SectionTitle('Bola rivojlanishi'),
-            const SizedBox(height: 12),
-            _MonthlyDevelopment(
-              months: _babyMonths,
-              isBoy: _isBoy,
-              primary: _primary,
-              light: _light,
-            ).animate().fadeIn(delay: 120.ms, duration: 400.ms),
-
-            const SizedBox(height: 20),
-
-            // ── Vaccination schedule ───────────────────────
-            _SectionTitle('Emlash jadvali'),
-            const SizedBox(height: 12),
-            _VaccineSchedule(
-              currentMonth: _babyMonths,
-              primary: _primary,
-            ).animate().fadeIn(delay: 160.ms, duration: 400.ms),
+            // Bola info, oylik rivojlanish va emlash jadvali
+            // keyinroq qo'shiladi.
           ])),
         ),
       ]),
@@ -246,13 +216,15 @@ class _CryTranslator extends StatefulWidget {
 class _CryTranslatorState extends State<_CryTranslator>
     with SingleTickerProviderStateMixin {
 
-  // States: idle → recording → analyzing → result
-  String _state = 'idle'; // idle | recording | analyzing | result
-  CryType? _result;
-  int _confidence = 0;
-  List<({CryType type, int percent})> _alternatives = const [];
+  // States: idle → recording → analyzing → cry_detected | no_cry | error
+  String _state = 'idle';
+  String? _errorMessage;
+  CryDetectionResult? _result;
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
+  final _analyzer = CryAnalyzer();
+
+  static const _recordSeconds = 4;
 
   @override
   void initState() {
@@ -271,47 +243,83 @@ class _CryTranslatorState extends State<_CryTranslator>
     super.dispose();
   }
 
-  void _onMicTap() {
-    if (_state == 'recording') return;
+  Future<void> _onMicTap() async {
+    if (_state != 'idle') return;
 
-    setState(() { _state = 'recording'; _result = null; });
-
-    // 3s record → analyze → mock result
-    Future.delayed(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      setState(() => _state = 'analyzing');
-
-      Future.delayed(const Duration(milliseconds: 1200), () {
-        if (!mounted) return;
-        // Mock API response — random cry type with moderate confidence
-        final rng = Random();
-        final shuffled = [...babyCryTypes]..shuffle(rng);
-        final main = shuffled.first;
-        // Realistik, "past" ishonch oralig'i: 52–74%
-        final mainPct = 52 + rng.nextInt(23);
-        // 2 ta muqobil — qolgan foizdan ulush
-        int remaining = 100 - mainPct;
-        final alt1Pct = (remaining * (0.45 + rng.nextDouble() * 0.2)).round();
-        final alt2Pct = remaining - alt1Pct;
-        final alts = <({CryType type, int percent})>[
-          (type: shuffled[1], percent: alt1Pct),
-          (type: shuffled[2], percent: alt2Pct),
-        ];
-        setState(() {
-          _state = 'result';
-          _result = main;
-          _confidence = mainPct;
-          _alternatives = alts;
-        });
-      });
+    setState(() {
+      _state = 'recording';
+      _errorMessage = null;
     });
+
+    try {
+      await _analyzer.startRecording();
+    } on MicrophonePermissionDenied {
+      if (!mounted) return;
+      setState(() {
+        _state = 'error';
+        _errorMessage = "Mikrofonga ruxsat berilmadi.\n"
+            "Sozlamalardan ruxsat bering.";
+      });
+      return;
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _state = 'error';
+        _errorMessage = "Yozish boshlanmadi.\nIltimos qayta urinib ko'ring.";
+      });
+      return;
+    }
+
+    await Future.delayed(const Duration(seconds: _recordSeconds));
+    if (!mounted) {
+      await _analyzer.cancelRecording();
+      return;
+    }
+
+    String? path;
+    try {
+      path = await _analyzer.stopRecording();
+    } catch (_) {
+      path = null;
+    }
+
+    if (!mounted) return;
+    if (path == null) {
+      setState(() {
+        _state = 'error';
+        _errorMessage = "Audio yozilmadi.\nIltimos qayta urinib ko'ring.";
+      });
+      return;
+    }
+
+    setState(() => _state = 'analyzing');
+
+    try {
+      final res = await _analyzer.analyze(path);
+      if (!mounted) return;
+      setState(() {
+        _result = res;
+        _state = res.isCry ? 'cry_detected' : 'no_cry';
+      });
+    } on CryAnalysisUnavailable catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _state = 'error';
+        _errorMessage = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _state = 'error';
+        _errorMessage = "Tahlil bajarilmadi.\nIltimos qayta urinib ko'ring.";
+      });
+    }
   }
 
   void _reset() => setState(() {
     _state = 'idle';
+    _errorMessage = null;
     _result = null;
-    _confidence = 0;
-    _alternatives = const [];
   });
 
   @override
@@ -337,7 +345,7 @@ class _CryTranslatorState extends State<_CryTranslator>
             ]),
           ),
           const Spacer(),
-          if (_state == 'result')
+          if (_state != 'idle' && _state != 'recording' && _state != 'analyzing')
             GestureDetector(
               onTap: _reset,
               child: Text('Qayta', style: GoogleFonts.nunito(
@@ -350,7 +358,7 @@ class _CryTranslatorState extends State<_CryTranslator>
         const SizedBox(height: 20),
 
         // ── Big mic button ──────────────────────────────
-        if (_state != 'result') ...[
+        if (_state == 'idle' || _state == 'recording' || _state == 'analyzing') ...[
           Center(child: GestureDetector(
             onTap: _state == 'idle' ? _onMicTap : null,
             child: AnimatedBuilder(
@@ -421,145 +429,218 @@ class _CryTranslatorState extends State<_CryTranslator>
 
           if (_state == 'idle')
             Text(
-              '3 soniya ovozni tahlil qilamiz',
+              '$_recordSeconds soniya ovozni tahlil qilamiz',
               style: GoogleFonts.nunito(
                 fontSize: 12, color: AppColors.textGrey),
               textAlign: TextAlign.center,
             ),
         ],
 
-        // ── Result ──────────────────────────────────────
-        if (_state == 'result' && _result != null) ...[
+        // ── Cry detected — show 5 educational reasons ───
+        if (_state == 'cry_detected' && _result != null) ...[
+          _CryDetectedHeader(
+            confidence: _result!.confidencePct,
+            primary: widget.primary,
+            light: widget.light,
+          ).animate().fadeIn(duration: 300.ms),
+
+          const SizedBox(height: 16),
+
+          Row(children: [
+            Text(
+              _result!.predictions != null
+                  ? "Taxminiy ehtimollik:"
+                  : "Eng keng tarqalgan sabablar:",
+              style: GoogleFonts.nunito(
+                fontSize: 13, fontWeight: FontWeight.w700,
+                color: AppColors.textMedium,
+              ),
+            ),
+            const Spacer(),
+            if (_result!.predictions != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.yellow.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.yellow.withValues(alpha: 0.4)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Text('⚠️', style: TextStyle(fontSize: 10)),
+                  const SizedBox(width: 4),
+                  Text("TAXMINIY", style: GoogleFonts.nunito(
+                    fontSize: 10, fontWeight: FontWeight.w800,
+                    color: AppColors.yellow,
+                  )),
+                ]),
+              ),
+          ]),
+          const SizedBox(height: 10),
+
+          ..._result!.sortedReasons.asMap().entries.map((e) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _CryReasonCard(
+              reason: e.value.reason,
+              probability: _result!.predictions != null
+                  ? e.value.prob : null,
+              isTop: e.key == 0 && _result!.predictions != null,
+              primary: widget.primary,
+              light: widget.light,
+            ).animate().fadeIn(
+              delay: (60 * (e.key + 1)).ms,
+              duration: 300.ms,
+            ).slideX(begin: 0.04, end: 0),
+          )),
+
+          if (_result!.predictionsNote != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.yellow.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: AppColors.yellow.withValues(alpha: 0.3)),
+              ),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                const Text('⚠️', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(
+                  _result!.predictionsNote!,
+                  style: GoogleFonts.nunito(
+                    fontSize: 11, color: AppColors.textMedium,
+                    height: 1.5, fontWeight: FontWeight.w600,
+                  ),
+                )),
+              ]),
+            ),
+            const SizedBox(height: 8),
+          ],
+
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('ℹ️', style: TextStyle(fontSize: 14)),
+              const SizedBox(width: 8),
+              Expanded(child: Text(
+                "Bu maslahat tashxis emas. Bola uzoq vaqt yig'lasa "
+                "yoki ahvoli yomonlasa, shifokorga murojaat qiling.",
+                style: GoogleFonts.nunito(
+                  fontSize: 11, color: AppColors.textGrey,
+                  height: 1.5, fontStyle: FontStyle.italic,
+                ),
+              )),
+            ]),
+          ),
+        ],
+
+        // ── No cry detected ─────────────────────────────
+        if (_state == 'no_cry') ...[
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: widget.light,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: widget.primary.withValues(alpha: 0.3))),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Result badge
-              Row(children: [
-                Container(
-                  width: 52, height: 52,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(
-                      color: widget.primary.withValues(alpha: 0.2),
-                      blurRadius: 10)]),
-                  child: Center(child: Text(_result!.emoji,
-                      style: const TextStyle(fontSize: 26))),
-                ),
-                const SizedBox(width: 14),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text("Chaqalog'ingiz...", style: GoogleFonts.nunito(
-                    fontSize: 11, color: AppColors.textGrey,
-                    fontWeight: FontWeight.w500)),
-                  Row(children: [
-                    Flexible(child: Text(_result!.label,
-                      style: GoogleFonts.nunito(
-                        fontSize: 20, fontWeight: FontWeight.w800,
-                        color: widget.primary))),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: widget.primary,
-                        borderRadius: BorderRadius.circular(10)),
-                      child: Text('$_confidence%',
-                        style: GoogleFonts.nunito(
-                          fontSize: 12, fontWeight: FontWeight.w800,
-                          color: Colors.white)),
-                    ),
-                  ]),
-                ])),
-              ]),
-              const SizedBox(height: 10),
-              // Confidence bar
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: _confidence / 100,
-                  minHeight: 6,
-                  backgroundColor: Colors.white,
-                  valueColor: AlwaysStoppedAnimation(widget.primary),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Taxminiy ishonch darajasi — aniq tashxis emas",
-                style: GoogleFonts.nunito(
-                  fontSize: 10.5, color: AppColors.textGrey,
-                  fontStyle: FontStyle.italic),
-              ),
-              const SizedBox(height: 12),
-              Text(_result!.description, style: GoogleFonts.nunito(
-                fontSize: 12, color: AppColors.textGrey,
-                fontStyle: FontStyle.italic, height: 1.4)),
-              const SizedBox(height: 12),
-              // Alternatives
-              if (_alternatives.isNotEmpty) ...[
-                Text("Boshqa ehtimollar:", style: GoogleFonts.nunito(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: AppColors.textGrey)),
-                const SizedBox(height: 8),
-                ..._alternatives.map((a) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(children: [
-                    Text(a.type.emoji,
-                        style: const TextStyle(fontSize: 14)),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(a.type.label,
-                      style: GoogleFonts.nunito(
-                        fontSize: 12, fontWeight: FontWeight.w600,
-                        color: AppColors.textMedium))),
-                    SizedBox(width: 70, child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: a.percent / 100,
-                        minHeight: 4,
-                        backgroundColor: Colors.white,
-                        valueColor: AlwaysStoppedAnimation(
-                            widget.primary.withValues(alpha: 0.4)),
-                      ),
-                    )),
-                    const SizedBox(width: 8),
-                    SizedBox(width: 30, child: Text('${a.percent}%',
-                      textAlign: TextAlign.end,
-                      style: GoogleFonts.nunito(
-                        fontSize: 11, fontWeight: FontWeight.w700,
-                        color: AppColors.textGrey))),
-                  ]),
-                )),
-                const SizedBox(height: 12),
-              ],
+                color: widget.primary.withValues(alpha: 0.3)),
+            ),
+            child: Column(children: [
               Container(
-                padding: const EdgeInsets.all(14),
+                width: 56, height: 56,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14)),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Icon(Icons.tips_and_updates_rounded,
-                      color: widget.primary, size: 18),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(_result!.advice,
-                    style: GoogleFonts.nunito(
-                      fontSize: 13, color: AppColors.textMedium,
-                      height: 1.55, fontWeight: FontWeight.w500))),
-                ]),
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(
+                    color: widget.primary.withValues(alpha: 0.15),
+                    blurRadius: 12)],
+                ),
+                child: const Center(
+                  child: Text('🤫', style: TextStyle(fontSize: 28))),
+              ),
+              const SizedBox(height: 12),
+              Text("Yig'i aniqlanmadi", style: GoogleFonts.nunito(
+                fontSize: 16, fontWeight: FontWeight.w800,
+                color: widget.primary,
+              )),
+              const SizedBox(height: 6),
+              Text(
+                "Ovoz juda jim yoki boshqa shovqin bo'lishi mumkin.\n"
+                "Mikrofonni chaqaloqqa yaqinroq tutib, qayta urinib ko'ring.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  fontSize: 13, color: AppColors.textMedium,
+                  height: 1.5, fontWeight: FontWeight.w500,
+                ),
               ),
             ]),
-          ).animate().fadeIn(duration: 350.ms).scale(
-              begin: const Offset(0.95, 0.95)),
+          ).animate().fadeIn(duration: 350.ms),
 
           const SizedBox(height: 14),
 
-          // Retry button
+          GestureDetector(
+            onTap: _reset,
+            child: Container(
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [widget.primary,
+                           widget.primary.withValues(alpha: 0.7)]),
+                borderRadius: BorderRadius.circular(14)),
+              child: Center(child: Text("Qayta urinib ko'rish",
+                style: GoogleFonts.nunito(
+                  fontSize: 14, fontWeight: FontWeight.w700,
+                  color: Colors.white))),
+            ),
+          ),
+        ],
+
+        // ── Error ───────────────────────────────────────
+        if (_state == 'error') ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.redLight,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.red.withValues(alpha: 0.3)),
+            ),
+            child: Column(children: [
+              Container(
+                width: 56, height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white, shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text('⚠️', style: TextStyle(fontSize: 28))),
+              ),
+              const SizedBox(height: 12),
+              Text('Xatolik', style: GoogleFonts.nunito(
+                fontSize: 16, fontWeight: FontWeight.w800,
+                color: AppColors.red,
+              )),
+              const SizedBox(height: 6),
+              Text(
+                _errorMessage ?? 'Tahlil bajarilmadi',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  fontSize: 13, color: AppColors.textMedium,
+                  height: 1.5, fontWeight: FontWeight.w500,
+                ),
+              ),
+            ]),
+          ).animate().fadeIn(duration: 350.ms),
+
+          const SizedBox(height: 14),
+
           GestureDetector(
             onTap: _reset,
             child: Container(
@@ -567,7 +648,7 @@ class _CryTranslatorState extends State<_CryTranslator>
               decoration: BoxDecoration(
                 border: Border.all(color: widget.primary, width: 1.5),
                 borderRadius: BorderRadius.circular(14)),
-              child: Center(child: Text("Qayta tahlil qilish",
+              child: Center(child: Text("Qayta urinib ko'rish",
                 style: GoogleFonts.nunito(
                   fontSize: 14, fontWeight: FontWeight.w700,
                   color: widget.primary))),
@@ -798,4 +879,226 @@ class _SectionTitle extends StatelessWidget {
     style: GoogleFonts.nunito(
       fontSize: 17, fontWeight: FontWeight.w800,
       color: AppColors.textDark));
+}
+
+// ─── Cry detection header ─────────────────────────────────────
+class _CryDetectedHeader extends StatelessWidget {
+  final int confidence;
+  final Color primary, light;
+  const _CryDetectedHeader({
+    required this.confidence,
+    required this.primary,
+    required this.light,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primary.withValues(alpha: 0.12),
+                   primary.withValues(alpha: 0.04)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 52, height: 52,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [BoxShadow(
+              color: primary.withValues(alpha: 0.2),
+              blurRadius: 10)]),
+          child: const Center(child: Text('👶',
+              style: TextStyle(fontSize: 28))),
+        ),
+        const SizedBox(width: 14),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Yig'i aniqlandi", style: GoogleFonts.nunito(
+              fontSize: 17, fontWeight: FontWeight.w800,
+              color: primary)),
+            const SizedBox(height: 2),
+            Text("Ishonch darajasi: $confidence%",
+              style: GoogleFonts.nunito(
+                fontSize: 12, color: AppColors.textMedium,
+                fontWeight: FontWeight.w500)),
+          ],
+        )),
+        Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: primary, borderRadius: BorderRadius.circular(20)),
+          child: Text('$confidence%',
+            style: GoogleFonts.nunito(
+              fontSize: 13, fontWeight: FontWeight.w800,
+              color: Colors.white)),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─── Single cry reason card with optional probability ─────────
+class _CryReasonCard extends StatefulWidget {
+  final CryReason reason;
+  final double? probability; // null = foiz ko'rsatilmaydi
+  final bool isTop;          // eng yuqori probability uchun ajratish
+  final Color primary, light;
+  const _CryReasonCard({
+    required this.reason,
+    required this.probability,
+    required this.isTop,
+    required this.primary,
+    required this.light,
+  });
+
+  @override
+  State<_CryReasonCard> createState() => _CryReasonCardState();
+}
+
+class _CryReasonCardState extends State<_CryReasonCard> {
+  late bool _expanded = widget.isTop; // eng yuqori — boshidan ochiq
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = widget.probability != null
+        ? (widget.probability! * 100).round()
+        : null;
+    final showBar = widget.probability != null;
+
+    return GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _expanded || widget.isTop ? widget.light : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: widget.isTop
+                ? widget.primary
+                : (_expanded
+                    ? widget.primary.withValues(alpha: 0.4)
+                    : AppColors.border),
+            width: widget.isTop ? 2 : 1.5,
+          ),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+          Row(children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12)),
+              child: Center(child: Text(widget.reason.emoji,
+                  style: const TextStyle(fontSize: 22))),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Flexible(child: Text(widget.reason.label,
+                    style: GoogleFonts.nunito(
+                      fontSize: 14, fontWeight: FontWeight.w800,
+                      color: AppColors.textDark))),
+                  if (widget.isTop) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: widget.primary,
+                        borderRadius: BorderRadius.circular(6)),
+                      child: Text("EHTIMOL",
+                        style: GoogleFonts.nunito(
+                          fontSize: 9, fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.3)),
+                    ),
+                  ],
+                ]),
+                const SizedBox(height: 2),
+                Text(widget.reason.description,
+                  style: GoogleFonts.nunito(
+                    fontSize: 11, color: AppColors.textGrey,
+                    height: 1.4, fontWeight: FontWeight.w500),
+                  maxLines: _expanded ? null : 1,
+                  overflow: _expanded
+                      ? TextOverflow.visible
+                      : TextOverflow.ellipsis),
+              ],
+            )),
+            const SizedBox(width: 8),
+            if (pct != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: widget.isTop
+                      ? widget.primary
+                      : widget.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text('$pct%', style: GoogleFonts.nunito(
+                  fontSize: 13, fontWeight: FontWeight.w800,
+                  color: widget.isTop ? Colors.white : widget.primary)),
+              )
+            else
+              AnimatedRotation(
+                duration: const Duration(milliseconds: 200),
+                turns: _expanded ? 0.5 : 0,
+                child: Icon(Icons.expand_more_rounded,
+                  color: AppColors.textGrey, size: 22),
+              ),
+          ]),
+          if (showBar) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: widget.probability!.clamp(0.0, 1.0),
+                minHeight: 4,
+                backgroundColor: Colors.white,
+                valueColor: AlwaysStoppedAnimation(
+                  widget.isTop
+                      ? widget.primary
+                      : widget.primary.withValues(alpha: 0.5)),
+              ),
+            ),
+          ],
+          if (_expanded) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10)),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Icon(Icons.tips_and_updates_rounded,
+                    color: widget.primary, size: 16),
+                const SizedBox(width: 8),
+                Expanded(child: Text(widget.reason.advice,
+                  style: GoogleFonts.nunito(
+                    fontSize: 12, color: AppColors.textMedium,
+                    height: 1.5, fontWeight: FontWeight.w500))),
+              ]),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
 }

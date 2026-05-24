@@ -2,6 +2,10 @@ class AppConstants {
   static const apiBase = 'http://localhost:8001'; // iOS simulator
   // static const apiBase = 'http://10.0.2.2:8001'; // Android emulator
 
+  // Cry detection backend (YAMNet)
+  static const cryApiBase = 'http://localhost:8002';
+  // static const cryApiBase = 'http://10.0.2.2:8002'; // Android emulator
+
   // SharedPreferences keys
   static const keyUserType       = 'user_type';
   static const keyTrimester      = 'trimester';

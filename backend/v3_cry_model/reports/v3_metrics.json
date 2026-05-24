@@ -1,0 +1,60 @@
+{
+  "version": "v3",
+  "classes": [
+    "needs",
+    "discomfort",
+    "pain"
+  ],
+  "class_mapping": {
+    "hungry": "needs",
+    "tired": "needs",
+    "discomfort": "discomfort",
+    "burping": "discomfort",
+    "belly_pain": "pain"
+  },
+  "features": "YAMNet(1024) + MFCC(78) + spectral(10) = 1112",
+  "model": "Ensemble: LogReg + RandomForest + SVM + GradientBoosting",
+  "cv_folds": 5,
+  "mean": {
+    "accuracy": 0.8098427887901571,
+    "balanced_accuracy": 0.42782446311858074,
+    "f1_macro": 0.4082581579599518
+  },
+  "std": {
+    "accuracy": 0.034252819439645435,
+    "balanced_accuracy": 0.08912245621128931,
+    "f1_macro": 0.06979116194563761
+  },
+  "per_fold": [
+    {
+      "fold": 1,
+      "accuracy": 0.8181818181818182,
+      "balanced_accuracy": 0.5133053221288516,
+      "f1_macro": 0.4656862745098039
+    },
+    {
+      "fold": 2,
+      "accuracy": 0.8181818181818182,
+      "balanced_accuracy": 0.4150326797385621,
+      "f1_macro": 0.4328502415458937
+    },
+    {
+      "fold": 3,
+      "accuracy": 0.8571428571428571,
+      "balanced_accuracy": 0.5261437908496732,
+      "f1_macro": 0.47512437810945274
+    },
+    {
+      "fold": 4,
+      "accuracy": 0.7662337662337663,
+      "balanced_accuracy": 0.3398692810457516,
+      "f1_macro": 0.3302238805970149
+    },
+    {
+      "fold": 5,
+      "accuracy": 0.7894736842105263,
+      "balanced_accuracy": 0.3447712418300654,
+      "f1_macro": 0.33740601503759393
+    }
+  ]
+}

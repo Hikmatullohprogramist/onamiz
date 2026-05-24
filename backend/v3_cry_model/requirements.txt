@@ -1,0 +1,24 @@
+# Audio processing
+librosa==0.10.2
+soundfile==0.12.1
+audiomentations==0.36.0
+
+# ML / Deep learning
+tensorflow==2.16.2
+tensorflow-hub==0.16.1
+scikit-learn==1.5.1
+numpy==1.26.4
+pandas==2.2.2
+
+# Visualization
+matplotlib==3.9.1
+seaborn==0.13.2
+
+# Notebooks
+jupyter==1.0.0
+ipykernel==6.29.5
+
+# API (later)
+fastapi==0.115.0
+uvicorn==0.30.6
+python-multipart==0.0.9

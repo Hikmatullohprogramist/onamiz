@@ -1,0 +1,14 @@
+{
+  "accuracy": 0.7758620689655172,
+  "balanced_accuracy": 0.1875,
+  "f1_macro": 0.17475728155339804,
+  "f1_weighted": 0.7231335788416471,
+  "per_class_f1": {
+    "hungry": 0.8737864077669902,
+    "tired": 0.0,
+    "discomfort": 0.0,
+    "burping": 0.0,
+    "belly_pain": 0.0
+  },
+  "epochs_trained": 21
+}
