@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
@@ -8,6 +7,7 @@ import '../screens/history/history_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/calendar/calendar_screen.dart';
 import '../screens/shell/app_shell.dart';
+import '../screens/daily_check/daily_check_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -25,6 +25,16 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/',
       pageBuilder: (_, state) => _fade(state.pageKey, const OnboardingScreen()),
+    ),
+
+    // Kunlik tekshiruv — push notification bosilganda ochiladi
+    GoRoute(
+      path: '/daily-check',
+      pageBuilder: (_, state) => MaterialPage(
+        key: state.pageKey,
+        fullscreenDialog: true,
+        child: const DailyCheckScreen(),
+      ),
     ),
 
     // Main shell (bottom nav)

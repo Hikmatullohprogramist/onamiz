@@ -8,13 +8,19 @@ import 'services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-
   initializeDateFormatting("uz", "");
+
+  // Notification → navigation callback: notif bosilganda to'g'ri route ochiladi
+  NotificationService.setNavigationCallback((route) {
+    appRouter.go(route);
+  });
+
   try {
     await NotificationService.init();
   } catch (_) {
     // Native assets may not be linked on hot restart — full rebuild fixes this
   }
+
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,

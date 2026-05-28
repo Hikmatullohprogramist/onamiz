@@ -96,20 +96,48 @@ class SymptomInput(BaseModel):
 
 
 class QuickInput(BaseModel):
-    """Tez bashorat — faqat muhim simptomlar"""
+    """
+    Kunlik tekshiruv — trimestga mos savollar javoblari.
+    Barcha trimest-xususiy maydonlar ixtiyoriy (default 0).
+    """
     trimester: str
-    age: int = Field(..., ge=14, le=55)
+    age: int          = Field(..., ge=14, le=55)
     gestational_week: int = Field(..., ge=1, le=45)
-    systolic_bp: float    = Field(120.0)
-    diastolic_bp: float   = Field(80.0)
-    heart_rate: float     = Field(80.0)
-    vaginal_bleeding: int = Field(0, ge=0, le=2)
-    headache_severity: int = Field(0, ge=0, le=2)
-    visual_disturbance: int = Field(0, ge=0, le=1)
-    fetal_movement: int   = Field(0, ge=0, le=2)
-    itching_palms_soles: int = Field(0, ge=0, le=3)
-    anemia_level: int     = Field(0, ge=0, le=3)
-    lang: str             = Field("uz")
+
+    # Vital (default normal qiymatlar)
+    systolic_bp: float  = Field(120.0, ge=60, le=250)
+    diastolic_bp: float = Field(80.0,  ge=40, le=160)
+    heart_rate: float   = Field(80.0,  ge=40, le=200)
+
+    # ── T1 savollar ──────────────────────────────────────────
+    vaginal_bleeding:  int = Field(0, ge=0, le=2)   # qon ketish
+    one_sided_pain:    int = Field(0, ge=0, le=1)   # ektopik xavf
+    nausea_severity:   int = Field(0, ge=0, le=4)   # hyperemesis
+    dizziness:         int = Field(0, ge=0, le=3)   # anemiya
+    fever:             int = Field(0, ge=0, le=2)   # infeksiya
+    urinary_burning:   int = Field(0, ge=0, le=1)   # UTI
+
+    # ── T2 savollar ──────────────────────────────────────────
+    headache_severity:  int = Field(0, ge=0, le=2)  # preeklampsia
+    visual_disturbance: int = Field(0, ge=0, le=1)  # eklampsiya
+    edema_level:        int = Field(0, ge=0, le=3)  # shish
+    fetal_movement:     int = Field(0, ge=0, le=2)  # fetal distress
+    painless_bleeding:  int = Field(0, ge=0, le=2)  # plasenta previa
+    sudden_weight_gain: int = Field(0, ge=0, le=1)  # preeklampsia
+
+    # ── T3 savollar ──────────────────────────────────────────
+    fetal_movement_t3:   int = Field(0, ge=0, le=2) # gipoksiya
+    contractions:        int = Field(0, ge=0, le=2) # erta tug'ruq
+    bleeding_with_pain:  int = Field(0, ge=0, le=1) # plasenta ajralishi
+    itching_palms_soles: int = Field(0, ge=0, le=3) # jigar xolestazi
+    shortness_of_breath: int = Field(0, ge=0, le=2) # o'pka shishi
+
+    # ── Profil (onboarding dan keladigan ma'lumotlar) ─────────
+    anemia_level:   int = Field(0, ge=0, le=3)
+    parity:         int = Field(0, ge=0, le=2)
+    rural:          int = Field(0, ge=0, le=1)
+
+    lang: str = Field("uz", description="uz | ru | en")
 
 
 # ─── Trimest encoder ─────────────────────────────────────────
@@ -172,11 +200,15 @@ def predict(payload: SymptomInput):
 
 @app.post("/predict/quick")
 def predict_quick(payload: QuickInput):
-    """Faqat muhim simptomlar bilan tez bashorat — Flutter uchun qulay"""
+    """
+    Kunlik tekshiruv bashorati.
+    Trimestga mos barcha savollar javoblari qabul qilinadi.
+    Berilmagan maydonlar avtomatik 0 deb hisoblanadi.
+    """
     try:
-        features = _to_features(payload.model_dump())
-        lang     = features.pop("lang", "uz")
-        features.pop("trimester", None)
+        features   = _to_features(payload.model_dump())
+        lang       = features.pop("lang", "uz")
+        features.pop("trimester", None)   # trimester_enc allaqachon qo'shildi
         return predict_symptom_risk(features, lang=lang)
     except FileNotFoundError as e:
         raise HTTPException(status_code=503, detail=str(e))

@@ -9,8 +9,6 @@ import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/risk_result.dart';
 import '../../services/api_service.dart';
-import '../../widgets/risk_card.dart';
-import '../../widgets/quick_check_form.dart';
 import '../../data/pregnancy_data.dart';
 import '../postpartum/postpartum_dashboard.dart';
 
@@ -180,8 +178,11 @@ class _DashboardScreenState extends State<_PregnantDashboard> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
             sliver: SliverList(delegate: SliverChildListDelegate([
+              _DailyCheckBanner(trimester: _trimester, history: _history)
+                .animate().fadeIn(duration: 350.ms),
+              const SizedBox(height: 16),
               _PregnancyPageView(week: _week)
-                .animate().fadeIn(duration: 400.ms),
+                .animate().fadeIn(delay: 60.ms, duration: 400.ms),
               const SizedBox(height: 16),
               _BabyVoiceCard(week: _week)
                 .animate().fadeIn(delay: 80.ms, duration: 400.ms),
@@ -1048,6 +1049,120 @@ class _TipsSectionState extends State<_TipsSection>
           ),
         ),
       ]),
+    );
+  }
+}
+
+// ─── Kunlik tekshiruv banner ──────────────────────────────────
+
+class _DailyCheckBanner extends StatelessWidget {
+  final String trimester;
+  final List<Map<String, dynamic>> history;
+
+  const _DailyCheckBanner({required this.trimester, required this.history});
+
+  bool get _doneToday {
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    return history.any((e) => e['date'] == today);
+  }
+
+  Map<String, dynamic>? get _todayEntry {
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    try {
+      return history.lastWhere((e) => e['date'] == today);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final done = _doneToday;
+    final entry = _todayEntry;
+
+    if (done && entry != null) {
+      // Bugun tekshiruv bajarilgan — natijani ko'rsat
+      final riskLevel = entry['risk_level'] as String? ?? 'yashil';
+      final isGood = riskLevel == 'yashil' || riskLevel == 'sariq';
+      final color = isGood ? AppColors.green : AppColors.red;
+
+      return GestureDetector(
+        onTap: () => context.push('/daily-check'),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Row(children: [
+            Text(entry['emoji'] as String? ?? '🟢',
+                style: const TextStyle(fontSize: 32)),
+            const SizedBox(width: 14),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Bugungi tekshiruv ✓', style: GoogleFonts.nunito(
+                  fontSize: 12, fontWeight: FontWeight.w600,
+                  color: color.withValues(alpha: 0.8),
+                )),
+                const SizedBox(height: 2),
+                Text(
+                  isGood ? 'Hammasi yaxshi!' : 'Shifokorga boring',
+                  style: GoogleFonts.nunito(
+                    fontSize: 17, fontWeight: FontWeight.w800, color: color,
+                  ),
+                ),
+              ],
+            )),
+            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.5)),
+          ]),
+        ),
+      );
+    }
+
+    // Bugun tekshiruv bajarilmagan — chaqiruv
+    return GestureDetector(
+      onTap: () => context.push('/daily-check'),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: AppColors.headerGradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 16, offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Kunlik tekshiruv', style: GoogleFonts.nunito(
+              fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white70,
+            )),
+            const SizedBox(height: 4),
+            Text('Bugun tahlil qilish', style: GoogleFonts.nunito(
+              fontSize: 19, fontWeight: FontWeight.w900, color: Colors.white,
+            )),
+            const SizedBox(height: 2),
+            Text(
+              trimester == 'T1' ? '6 savol · ~1 daqiqa' : '7 savol · ~1 daqiqa',
+              style: GoogleFonts.nunito(fontSize: 12, color: Colors.white60),
+            ),
+          ]),
+          const Spacer(),
+          Container(
+            width: 52, height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.arrow_forward_rounded,
+                color: Colors.white, size: 24),
+          ),
+        ]),
+      ),
     );
   }
 }

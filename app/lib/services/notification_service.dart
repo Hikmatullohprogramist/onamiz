@@ -6,12 +6,18 @@ class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
 
+  // Navigation callback — main.dart da set qilinadi
+  static void Function(String route)? _onNotifTap;
+  static void setNavigationCallback(void Function(String) cb) {
+    _onNotifTap = cb;
+  }
+
   static Future<void> init() async {
     if (_initialized) return;
     tz.initializeTimeZones();
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios     = DarwinInitializationSettings(
+    const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
@@ -20,9 +26,21 @@ class NotificationService {
     await _plugin.initialize(
       const InitializationSettings(android: android, iOS: ios),
       onDidReceiveNotificationResponse: (details) {
-        // Router ga yo'naltirish keyinchalik qo'shiladi
+        final payload = details.payload ?? '/daily-check';
+        _onNotifTap?.call(payload);
       },
     );
+
+    // App closed holda notif bosilganini tekshirish
+    final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp == true) {
+      final payload =
+          launchDetails?.notificationResponse?.payload ?? '/daily-check';
+      Future.delayed(const Duration(milliseconds: 600), () {
+        _onNotifTap?.call(payload);
+      });
+    }
+
     _initialized = true;
   }
 
@@ -32,23 +50,22 @@ class NotificationService {
             IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
-    // Android 13+ (API 33) — POST_NOTIFICATIONS runtime permission
     await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
   }
 
-  /// Har kuni berilgan vaqtda bildirishnoma
+  /// Har kuni berilgan vaqtda kunlik tekshiruv bildiruvchisi
   static Future<void> scheduleDailyCheck({
     int hour = 9,
     int minute = 0,
   }) async {
-    await _plugin.cancelAll();
+    await _plugin.cancel(1);
 
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(
-        tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
@@ -60,7 +77,8 @@ class NotificationService {
       scheduled,
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'daily_check', 'Kunlik tekshiruv',
+          'daily_check',
+          'Kunlik tekshiruv',
           channelDescription: 'Har kunlik sog\'liq tekshiruvi',
           importance: Importance.high,
           priority: Priority.high,
@@ -71,6 +89,7 @@ class NotificationService {
           presentSound: true,
         ),
       ),
+      payload: '/daily-check',
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
       uiLocalNotificationDateInterpretation:
@@ -78,37 +97,39 @@ class NotificationService {
     );
   }
 
-  /// Kun ora (muhimroq savollar uchun)
-  static Future<void> scheduleEveryOtherDay({
-    int hour = 10,
-    int minute = 0,
-  }) async {
+  /// Reminder bildiruvchi (agar kunlik tekshiruv bajarilmasa)
+  static Future<void> scheduleEvening({int hour = 20, int minute = 0}) async {
+    await _plugin.cancel(2);
+
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(
-        tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(const Duration(days: 2));
+      scheduled = scheduled.add(const Duration(days: 1));
     }
 
     await _plugin.zonedSchedule(
       2,
-      '🤰 Onamiz — Batafsil tekshiruv',
-      'Haftalik kuzatuv savollariga javob bering',
+      '🤰 Onamiz — Eslatma',
+      'Bugungi tekshiruvni hali bajarmagansiz',
       scheduled,
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'weekly_check', 'Haftalik tekshiruv',
-          channelDescription: 'Batafsil sog\'liq tekshiruvi',
-          importance: Importance.high,
-          priority: Priority.high,
+          'reminder',
+          'Eslatma',
+          channelDescription: 'Kunlik tekshiruv eslatmasi',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
         ),
         iOS: DarwinNotificationDetails(
           presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
+          presentBadge: false,
+          presentSound: false,
         ),
       ),
+      payload: '/daily-check',
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
