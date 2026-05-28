@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 ROOT         = Path(__file__).parent
+MODEL_V6     = ROOT / "models" / "onamiz_v6.joblib"
 MODEL_V5     = ROOT / "models" / "onamiz_v5.joblib"
 MODEL_V4     = ROOT / "models" / "onamiz_v4.joblib"
 
@@ -19,11 +20,16 @@ _cache: Dict[str, Any] = {}
 
 def _load():
     if "model" not in _cache:
-        path = MODEL_V5 if MODEL_V5.exists() else MODEL_V4
+        if MODEL_V6.exists():
+            path = MODEL_V6
+        elif MODEL_V5.exists():
+            path = MODEL_V5
+        else:
+            path = MODEL_V4
         if not path.exists():
             raise FileNotFoundError(
-                f"Model topilmadi: {MODEL_V5}\n"
-                "train_v5.py ishga tushiring yoki Colab dan yuklab, models/ papkasiga joylashtiring."
+                f"Model topilmadi: {MODEL_V6}\n"
+                "train_v6.py ishga tushiring yoki models/ papkasiga joylashtiring."
             )
         _cache["model"] = joblib.load(path)
         _cache["model_path"] = str(path)
